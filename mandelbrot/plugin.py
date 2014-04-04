@@ -20,6 +20,9 @@ from mandelbrot.loggers import getLogger
 
 logger = getLogger("mandelbrot.plugin")
 
+class PluginError(Exception):
+    pass
+
 class IPlugin(object):
 
     def __init__(self, *args, **kwargs):
@@ -45,12 +48,14 @@ class PluginManager(object):
         for p in self._eggs:
             working_set.add(p)
         for e in errors:
-            logger.info("failed to load plugin egg '%s'" % e)
+            logger.info("failed to load plugin egg '%s'", e)
 
     def getfactory(self, group, name=None):
         entrypoints = list(working_set.iter_entry_points(group, name))
+        if len(entrypoints) == 0:
+            raise PluginError("Factory not found for entry point %s:%s" % (group,name))
         return entrypoints[0].load()
 
     def newinstance(self, group, name, *args, **kwargs):
         factory = self.getfactory(group, name)
-        return factory(args, kwargs)
+        return factory()

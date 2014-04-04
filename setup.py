@@ -18,6 +18,8 @@ setup(
     # installation dependencies
     install_requires=[
         'twisted >= 13.2.0',
+        'pesky-settings >= 0.0.1',
+        'python-daemon >= 1.5.5',
         ],
     # package classifiers for PyPI
     classifiers=[
@@ -29,20 +31,26 @@ setup(
         "License :: Other/Proprietary License",
         "Natural Language :: English",
         "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         ],
     # package contents
     packages=[
         'mandelbrot',
+        'mandelbrot.agent',
         'mandelbrot.command',
-        'mandelbrot.client',
+        'mandelbrot.endpoints',
+        'mandelbrot.probes',
         ],
     entry_points={
         'console_scripts': [
             'mandelbrot-agent=mandelbrot.command.agent:main',
             ],
+        'io.mandelbrot.endpoint': [
+            'io.mandelbrot.endpoint.ZeromqEndpoint=mandelbrot.endpoints.zeromq:ZeromqEndpoint',
+            ],
         'io.mandelbrot.probe': [
-            'io.mandelbrot.probe.SystemLoadLinux=mandelbrot.probes.system.SystemLoadLinux',
+            'io.mandelbrot.probe.SystemLoadLinux=mandelbrot.probes.system:SystemLoadLinux',
             ],
         },
     test_suite="test",

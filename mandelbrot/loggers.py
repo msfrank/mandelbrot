@@ -131,24 +131,27 @@ class Logger(object):
 
     def msg(self, level, message, **kwds):
         kwds.update({'logger': self, 'level': level})
-        msg(message, **kwds)
+        if len(message) > 1:
+            msg(message[0] % message[1:], **kwds)
+        else:
+            msg(message[0], **kwds)
 
     def exception(self, exception):
         err(exception, None, logger=self, level=DEBUG)
 
-    def trace(self, message, **kwds):
+    def trace(self, *message, **kwds):
         self.msg(TRACE, message, **kwds)
 
-    def debug(self, message, **kwds):
+    def debug(self, *message, **kwds):
         self.msg(DEBUG, message, **kwds)
 
-    def info(self, message, **kwds):
+    def info(self, *message, **kwds):
         self.msg(INFO, message, **kwds)
 
-    def warning(self, message, **kwds):
+    def warning(self, *message, **kwds):
         self.msg(WARNING, message, **kwds)
 
-    def error(self, message, **kwds):
+    def error(self, *message, **kwds):
         self.msg(ERROR, message, **kwds)
 
     def tracedfunc(self, fn):

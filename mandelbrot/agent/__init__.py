@@ -15,36 +15,57 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
+import Queue
 from twisted.internet import reactor
+from twisted.application.service import MultiService
 from mandelbrot.plugin import PluginManager
-from mandelbrot.agent.probe import ProbeScheduler
+from mandelbrot.agent.probes import ProbeScheduler
+from mandelbrot.agent.endpoints import EndpointWriter
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 
 logger = getLogger('mandelbrot.agent')
 
-class Agent(object):
+class Agent(MultiService):
     """
     """
     def __init__(self):
-        pass
+        MultiService.__init__(self)
+        self.setName('Agent')
 
     def configure(self, ns):
+        logger.debug("-- configuring mandelbrot agent --")
         # load configuration
-        section = ns.section("agent")
+        section = ns.get_section("agent")
         plugins = PluginManager()
         plugins.configure(section)
-        self.probes = ProbeScheduler(plugins)
+        # create the internal agent queue
+        queuesize = section.get_int("agent queue size", 4096)
+        deque = Queue.Queue(maxsize=queuesize)
+        logger.debug("created agent queue with size %i", queuesize)
+        # configure probes
+        self.probes = ProbeScheduler(plugins, deque)
+        self.addService(self.probes)
+        self.probes.configure(ns)
+        # configure endpoints
+        self.endpoints = EndpointWriter(plugins, deque)
+        self.addService(self.endpoints)
+        self.endpoints.configure(ns)
         # configure logging
-        logconfigfile = section.getPath('log config file', "%s.logconfig" % ns.appname)
-        if section.getBoolean("debug", False):
+        logconfigfile = section.get_path('log config file', "%s.logconfig" % ns.appname)
+        if section.get_bool("debug", False):
             startLogging(StdoutHandler(), DEBUG, logconfigfile)
         else:
             startLogging(None)
+        #startLogging(StdoutHandler(), DEBUG, logconfigfile)
 
     def run(self):
-        self.probes.startService()
+        logger.info("-- starting mandelbrot agent --")
+        self.privilegedStartService()
+        self.startService()
         reactor.run()
-        self.probes.stopService()
+        logger.info("-- stopping mandelbrot agent --")
+        self.stopService()
+        logger.info("-- stopped mandelbrot agent --")
         return 0
 
     def printError(self, failure):

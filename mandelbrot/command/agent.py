@@ -16,22 +16,26 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys, traceback
-from mandelbrot.settings import Settings, ConfigureError
+from pesky.settings import Settings, ConfigureError
+from mandelbrot import versionstring
 from mandelbrot.agent import Agent
 
 def main():
     settings = Settings(
         usage="[OPTIONS...]",
+        version=versionstring(),
         description="Mandelbrot agent",
+        appname="mandelbrot-agent",
+        confbase="/etc/mandelbrot",
         section="agent")
     try:
-        settings.addOption("f", "foreground",
+        settings.add_switch("f", "foreground",
             override="stay in foreground", help="Do not fork into the background"
             )
-        settings.addLongOption("log-config",
+        settings.add_longoption("log-config",
             override="log config file", help="use logging configuration file FILE", metavar="FILE"
             )
-        settings.addSwitch("d", "debug",
+        settings.add_switch("d", "debug",
             override="debug", help="Emit lots of debugging information"
             )
         # load configuration

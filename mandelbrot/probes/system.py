@@ -16,6 +16,7 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 from mandelbrot.probes import IProbe
+from mandelbrot.evaluation import Evaluation, EvaluationState
 
 class SystemLoadLinux(IProbe):
     """
@@ -32,8 +33,13 @@ class SystemLoadLinux(IProbe):
         with open('/proc/cpuinfo', 'r') as f:
             ncores = 0
             for line in f.readlines():
-                name,value = line.split(':', 1)
-                name = name.strip()
-                value = value.lstrip()
-                if name == 'processor':
-                    ncores += 1
+                try:
+                    name,value = line.split(':', 1)
+                    name = name.strip()
+                    value = value.lstrip()
+                    if name.lower() == 'processor':
+                        ncores += 1
+                except:
+                    pass
+        summary = "load average is %.1f %.1f %.1f, detected %i cores" % (load1,load5,load15,ncores)
+        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
