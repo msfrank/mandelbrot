@@ -15,21 +15,31 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-from zope.interface import Interface, implements
+from collections import MutableMapping
 
-class IEndpoint(Interface):
+class MBObject(MutableMapping):
+    """
+    """
+    def __init__(self):
+        self.parent = None
+        self.children = dict()
 
-    def configure(self, section):
-        ""
+    def __getitem__(self, name):
+        return self.children[name]
 
-    def send(self, message):
-        ""
+    def __setitem__(self, name, mbobject):
+        if not isinstance(mbobject, MBObject):
+            raise TypeError()
+        if mbobject.parent is not None:
+            raise RuntimeError()
+        self.children[name] = mbobject
+        mbobject.parent = self
 
-class Endpoint(object):
-    implements(IEndpoint)
+    def __delitem__(self, name):
+        raise RuntimeError()
 
-    def configure(self, section):
-        pass
+    def __iter__(self):
+        return iter(self.children)
 
-    def send(self, message):
-        raise NotImplementedError()
+    def __len__(self):
+        return len(self.children)

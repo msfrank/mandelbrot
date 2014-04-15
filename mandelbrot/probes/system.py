@@ -15,15 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-from mandelbrot.probes import IProbe
+from mandelbrot.probes import Probe
 from mandelbrot.evaluation import Evaluation, EvaluationState
 
-class SystemLoadLinux(IProbe):
+class SystemLoadLinux(Probe):
     """
     """
-    def configure(self, section):
-        pass
-
     def probe(self):
         with open('/proc/loadavg', 'r') as f:
             fields = [field for field in f.readline().split(' ') if field != '']

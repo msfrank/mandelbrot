@@ -17,9 +17,11 @@ setup(
     author_email="msfrank@syntaxockey.com",
     # installation dependencies
     install_requires=[
+        'zope.interface',
         'twisted >= 13.2.0',
         'pesky-settings >= 0.0.1',
         'python-daemon >= 1.5.5',
+        'setuptools',
         ],
     # package classifiers for PyPI
     classifiers=[
@@ -41,6 +43,7 @@ setup(
         'mandelbrot.command',
         'mandelbrot.endpoints',
         'mandelbrot.probes',
+        'mandelbrot.systems',
         ],
     entry_points={
         'console_scripts': [
@@ -51,6 +54,9 @@ setup(
             ],
         'io.mandelbrot.probe': [
             'io.mandelbrot.probe.SystemLoadLinux=mandelbrot.probes.system:SystemLoadLinux',
+            ],
+        'io.mandelbrot.system': [
+            'io.mandelbrot.system.GenericHost=mandelbrot.systems.generic:GenericHost',
             ],
         },
     test_suite="test",

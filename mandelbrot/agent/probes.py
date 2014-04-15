@@ -15,23 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import random, datetime, collections
+import random, datetime, Queue
 from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
-from twisted.application.service import MultiService
+from twisted.application.service import Service
+from pesky.settings import ConfigureError
 from mandelbrot.evaluation import Evaluation
-from mandelbrot.message import *
+from mandelbrot.message import StatusMessage,MetricsMessage,EventsMessage,SnapshotMessage
 from mandelbrot.loggers import getLogger
 
 logger = getLogger('mandelbrot.agent.probes')
 
-class ProbeScheduler(MultiService):
+class ProbeScheduler(Service):
     """
     """
-    def __init__(self, plugins, deque):
-        MultiService.__init__(self)
+    def __init__(self, inventory, deque):
         self.setName("ProbeScheduler")
-        self.plugins = plugins
+        self.inventory = inventory
         self.probes = dict()
         self.deque = deque
 
@@ -40,23 +40,21 @@ class ProbeScheduler(MultiService):
         section = ns.get_section('probes')
         defaultinterval = section.get_timedelta("default probe interval")
         defaultsplay = section.get_timedelta("default probe splay")
-        # configure individual probes
-        for section in ns.find_sections('probe:'):
-            probename = section.name[6:]
-            logger.debug("creating probe %s", probename)
-            probetype = section.get_str('probe type')
-            probeinterval = section.get_timedelta('probe interval', defaultinterval)
-            probesplay = section.get_timedelta('probe splay', defaultsplay)
-            if probetype is not None:
-                try:
-                    probe = self.plugins.newinstance('io.mandelbrot.probe', probetype)
-                    probe.configure(section)
-                    self.probes[probename] = ProbeRunner(probe, probename, probeinterval, probesplay, self.deque)
-                    logger.debug("configured probe %s", probename)
-                except Exception, e:
-                    logger.warning("skipping probe %s: %s", probename, str(e))
-            else:
-                logger.warning("skipping probe %s: is missing probe type", probename)
+        # initialize each probe specified in the configuration
+        for section in ns.find_sections('probe:/'):
+            probepath = section.name[6:]
+            try:
+                probe = self.inventory.get_object(probepath)
+                if probe is None:
+                    raise Exception("probe is not enabled")
+                interval = section.get_timedelta('probe interval', defaultinterval)
+                splay = section.get_timedelta('probe splay', defaultsplay)
+                # create a runner
+                self.probes[probepath] = ProbeRunner(probe, interval, splay, self.deque)
+            except ConfigureError:
+                raise
+            except Exception, e:
+                logger.warning("ignoring probe %s: %s", probepath, str(e))
 
     def startService(self):
         logger.debug("starting probe scheduler")
@@ -73,9 +71,8 @@ class ProbeScheduler(MultiService):
 class ProbeRunner(object):
     """
     """
-    def __init__(self, probe, name, interval, splay, deque):
+    def __init__(self, probe, interval, splay, deque):
         self.probe = probe
-        self.name = name
         self.interval = interval
         self.splay = splay
         self.deque = deque
@@ -83,21 +80,22 @@ class ProbeRunner(object):
         self._call = LoopingCall(self.call)
 
     def call(self):
+        objectid = self.probe.id
         try:
             # convert evaluation to messages if necessary
             result = self.probe.probe()
             if isinstance(result, Evaluation):
                 eval = result
-                logger.debug("probe %s evaluates %s", self.name, eval)
-                messages = [StatusMessage(self.name, eval.state, eval.summary, eval.detail, eval.timestamp)]
+                logger.debug("probe %s evaluates %s", objectid, eval)
+                messages = [StatusMessage(objectid, eval.state, eval.summary, eval.detail, eval.timestamp)]
                 if eval.metrics is not None:
-                    messages.append(MetricsMessage(self.name, eval.metrics, eval.timestamp))
+                    messages.append(MetricsMessage(objectid, eval.metrics, eval.timestamp))
                 if eval.events is not None:
-                    messages.append(EventsMessage(self.name, eval.events, eval.timestamp))
+                    messages.append(EventsMessage(objectid, eval.events, eval.timestamp))
                 if eval.metrics is not None:
-                    messages.append(MetricsMessage(self.name, eval.metrics, eval.timestamp))
+                    messages.append(MetricsMessage(objectid, eval.metrics, eval.timestamp))
                 if eval.snapshot is not None:
-                    messages.append(SnapshotMessage(self.name, eval.snapshot, eval.timestamp))
+                    messages.append(SnapshotMessage(objectid, eval.snapshot, eval.timestamp))
             # otherwise pass data along without conversion
             else:
                 messages = result
@@ -112,17 +110,17 @@ class ProbeRunner(object):
                 self._lastexctype = None
         except Exception, e:
             if self._lastexctype is None or isinstance(e, self._lastexctype):
-                logger.warning("probe %s generates error: %s", self.name, e)
+                logger.warning("probe %s generates error: %s", objectid, e)
                 self._lastexctype = type(e)
 
     def start(self):
-        logger.debug("starting probe %s with interval %s", self.name, self.interval)
+        logger.debug("starting probe %s with interval %s", self.probe.id, self.interval)
         self._call.start(timedelta_to_seconds(self.interval), True)
 
     def stop(self):
         if self._call.running:
             self._call.stop()
-        logger.debug("stopped probe %s", self.name)
+        logger.debug("stopped probe %s", self.probe.id)
 
 def timedelta_to_seconds(td):
     """

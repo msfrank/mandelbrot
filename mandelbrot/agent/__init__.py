@@ -19,6 +19,7 @@ import Queue
 from twisted.internet import reactor
 from twisted.application.service import MultiService
 from mandelbrot.plugin import PluginManager
+from mandelbrot.agent.inventory import InventoryDatabase
 from mandelbrot.agent.probes import ProbeScheduler
 from mandelbrot.agent.endpoints import EndpointWriter
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
@@ -42,8 +43,12 @@ class Agent(MultiService):
         queuesize = section.get_int("agent queue size", 4096)
         deque = Queue.Queue(maxsize=queuesize)
         logger.debug("created agent queue with size %i", queuesize)
+        # 
+        self.inventory = InventoryDatabase(plugins)
+        self.addService(self.inventory)
+        self.inventory.configure(ns)
         # configure probes
-        self.probes = ProbeScheduler(plugins, deque)
+        self.probes = ProbeScheduler(self.inventory, deque)
         self.addService(self.probes)
         self.probes.configure(ns)
         # configure endpoints

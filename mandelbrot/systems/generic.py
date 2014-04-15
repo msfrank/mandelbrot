@@ -15,21 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-from zope.interface import Interface, implements
+import socket
+from mandelbrot.systems import System
 
-class IEndpoint(Interface):
-
+class GenericHost(System):
+    """
+    """
     def configure(self, section):
-        ""
+        System.configure(self, section)
+        self.set_id("fqdn:" + socket.getfqdn())
 
-    def send(self, message):
-        ""
-
-class Endpoint(object):
-    implements(IEndpoint)
-
-    def configure(self, section):
-        pass
-
-    def send(self, message):
-        raise NotImplementedError()
+    def describe(self):
+        return None

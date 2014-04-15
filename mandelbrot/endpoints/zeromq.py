@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-from mandelbrot.endpoints import IEndpoint
+from mandelbrot.endpoints import Endpoint
 from mandelbrot.message import Message
 from mandelbrot.loggers import getLogger
 
 logger = getLogger('mandelbrot.endpoints.zeromq')
 
-class ZeromqEndpoint(IEndpoint):
+class ZeromqEndpoint(Endpoint):
     """
     """
     def configure(self, section):

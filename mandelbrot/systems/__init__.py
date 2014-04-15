@@ -18,7 +18,7 @@
 from zope.interface import Interface, implements
 from mandelbrot.mbobject import MBObject
 
-class IProbe(Interface):
+class ISystem(Interface):
 
     def configure(self, section):
         ""
@@ -29,20 +29,24 @@ class IProbe(Interface):
     def get_id(self):
         ""
 
-    def probe(self):
+    def describe(self):
         ""
 
-class Probe(MBObject):
-    implements(IProbe)
+class System(MBObject):
+    """
+    """
+    implements(ISystem)
 
     def __init__(self):
         MBObject.__init__(self)
         self._objectid = None
+        self.type = None
         self.name = None
         self.description = None
         self.tags = None
 
     def configure(self, section):
+        self.type = section.get_str('system type')
         self.name = section.get_str('display name')
         self.description = section.get_str('description')
         self.tags = section.get_list('tags')
@@ -57,5 +61,6 @@ class Probe(MBObject):
 
     id = property(get_id, set_id)
 
-    def probe(self):
+    def describe(self):
         raise NotImplementedError()
+
