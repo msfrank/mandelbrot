@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import Queue, pprint
+import Queue, urlparse, pprint
 from twisted.internet import reactor
 from twisted.application.service import MultiService
 from twisted.web.client import Agent as HttpAgent
@@ -69,28 +69,36 @@ class Agent(MultiService):
             startLogging(None)
 
     def makeregistration(self):
-        uri = self.inventory.root.id
         def makespec(obj):
             children = {}
             for name,child in obj.children.items():
                 children[name] = makespec(child)
-            return {'objectType': obj.type, 'metaData': obj.metadata, 'children': children}
-        return {'uri': self.inventory.root.id, 'spec': makespec(self.inventory.root)} 
+            return {'objectType': obj.get_type(), 'metaData': obj.get_metadata(), 'children': children}
+        return {'uri': self.inventory.root.get_id(), 'spec': makespec(self.inventory.root)} 
 
     def startService(self):
         # start child services 
         MultiService.startService(self)
         # register with supervisor
         registration = self.makeregistration()
-        logger.debug("registering system %s with supervisor %s", registration['uri'], self.supervisor)
+        url = urlparse.urljoin(self.supervisor, '1/registry')
+        logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
         self.agent = HttpAgent(reactor)
         headers = Headers({
             'Content-Type': ['application/json'],
             'User-Agent': ['mandelbrot-agent/' + versionstring()]
         })
-        logger.debug("system registration:\n%s", pprint.pformat(registration))
-        #d = agent.request('POST', self.supervisor, headers, JsonProducer(registration))
-        #d.addCallback(cbResponse)
+        logger.debug("POST %s\n%s", url, pprint.pformat(registration))
+        defer = self.agent.request('POST', url, headers, JsonProducer(registration))
+        defer.addCallbacks(self.onRegistration, self.onFailure)
+
+    def onRegistration(self, response):
+        logger.debug("registration returned %i %s", response.code, response.phrase)
+        expires = response.headers.getRawHeaders('Expires')
+        cacheControl = response.headers.getRawHeaders('Cache-Control')
+
+    def onFailure(self, failure):
+        logger.debug("registration failed: %s" % failure.getErrorMessage())
 
     def run(self):
         logger.info("-- starting mandelbrot agent --")

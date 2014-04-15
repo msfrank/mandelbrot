@@ -1,5 +1,5 @@
 [agent]
-supervisor url = http://supervisor.mandelbrot.io
+supervisor url = http://localhost
 use srv records = true
 ssl client certificate file = /etc/pki/tls/certs/mandelbrot-client.crt
 ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt 

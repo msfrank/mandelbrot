@@ -72,7 +72,12 @@ class Probe(MBObject):
         return self.get_type()
 
     def get_metadata(self):
-        return {'prettyName': self.name, 'description': self.description}
+        metadata = {}
+        if self.name is not None:
+            metadata['prettyName'] = self.name
+        if self.name is not None:
+            metadata['description'] = self.description
+        return metadata
 
     @property
     def metadata(self):
