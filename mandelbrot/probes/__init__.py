@@ -29,6 +29,12 @@ class IProbe(Interface):
     def get_id(self):
         ""
 
+    def get_type(self):
+        ""
+
+    def get_metadata(self):
+        ""
+
     def probe(self):
         ""
 
@@ -38,6 +44,7 @@ class Probe(MBObject):
     def __init__(self):
         MBObject.__init__(self)
         self._objectid = None
+        self._objecttype = None
         self.name = None
         self.description = None
         self.tags = None
@@ -56,6 +63,20 @@ class Probe(MBObject):
         return self._objectid
 
     id = property(get_id, set_id)
+
+    def get_type(self):
+        return self._objecttype
+
+    @property
+    def type(self):
+        return self.get_type()
+
+    def get_metadata(self):
+        return {'prettyName': self.name, 'description': self.description}
+
+    @property
+    def metadata(self):
+        return self.get_metadata()
 
     def probe(self):
         raise NotImplementedError()

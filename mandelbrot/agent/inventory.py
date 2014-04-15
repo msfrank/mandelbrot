@@ -15,17 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-from twisted.application.service import Service
 from pesky.settings import ConfigureError
 from mandelbrot.loggers import getLogger
 
 logger = getLogger('mandelbrot.agent.inventory')
 
-class InventoryDatabase(Service):
+class InventoryDatabase(object):
     """
     """
     def __init__(self, plugins):
-        self.setName("InventoryDatabase")
         self.plugins = plugins
         self.root = None
 
@@ -87,9 +85,3 @@ class InventoryDatabase(Service):
                 raise
             except Exception, e:
                 logger.warning("skipping section %s: %s", section.name, str(e))
-
-    def startService(self):
-        logger.debug("starting inventory service")
-
-    def stopService(self):
-        logger.debug("stopping inventory service")

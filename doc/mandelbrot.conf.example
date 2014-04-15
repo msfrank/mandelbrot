@@ -1,9 +1,8 @@
 [agent]
-supervisor = http://supervisor.mandelbrot.io
-enable srv records = true
+supervisor url = http://supervisor.mandelbrot.io
+use srv records = true
 ssl client certificate file = /etc/pki/tls/certs/mandelbrot-client.crt
 ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt 
-site moids file = /etc/mandelbrot/moids.site
 local spool directory = /var/spool/mandelbrot
 
 [system]

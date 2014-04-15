@@ -22,6 +22,9 @@ from mandelbrot.evaluation import Evaluation, EvaluationState
 class SystemLoadLinux(Probe):
     """
     """
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemLoadLinux"
+
     def probe(self):
         with open('/proc/loadavg', 'r') as f:
             fields = [field for field in f.readline().split(' ') if field != '']
@@ -45,6 +48,9 @@ class SystemLoadLinux(Probe):
 class SystemLoadGeneric(Probe):
     """
     """
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemLoadGeneric"
+
     def probe(self):
         load1, load5, load15 = os.getloadavg()
         summary = "load average is %.1f %.1f %.1f" % (load1,load5,load15)

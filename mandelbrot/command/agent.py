@@ -18,7 +18,7 @@
 import sys, traceback
 from pesky.settings import Settings, ConfigureError
 from mandelbrot import versionstring
-from mandelbrot.agent import Agent
+from mandelbrot.agent.agent import Agent
 
 def main():
     settings = Settings(

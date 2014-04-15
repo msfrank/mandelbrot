@@ -14,3 +14,25 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
+
+import json
+from zope.interface import implements
+from twisted.internet.defer import succeed
+from twisted.web.iweb import IBodyProducer
+
+class JsonProducer(object):
+    implements(IBodyProducer)
+
+    def __init__(self, body):
+        self.entity = json.dumps(body)
+        self.length = len(self.entity)
+
+    def startProducing(self, consumer):
+        consumer.write(self.entity)
+        return succeed(None)
+
+    def pauseProducing(self):
+        pass
+
+    def stopProducing(self):
+        pass
