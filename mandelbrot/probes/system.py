@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 from mandelbrot.probes import Probe
 from mandelbrot.evaluation import Evaluation, EvaluationState
 
@@ -39,4 +40,12 @@ class SystemLoadLinux(Probe):
                 except:
                     pass
         summary = "load average is %.1f %.1f %.1f, detected %i cores" % (load1,load5,load15,ncores)
+        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
+
+class SystemLoadGeneric(Probe):
+    """
+    """
+    def probe(self):
+        load1, load5, load15 = os.getloadavg()
+        summary = "load average is %.1f %.1f %.1f" % (load1,load5,load15)
         return Evaluation(EvaluationState.STATE_HEALTHY, summary)

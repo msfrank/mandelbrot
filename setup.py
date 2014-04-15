@@ -54,6 +54,7 @@ setup(
             ],
         'io.mandelbrot.probe': [
             'io.mandelbrot.probe.SystemLoadLinux=mandelbrot.probes.system:SystemLoadLinux',
+            'io.mandelbrot.probe.SystemLoadGeneric=mandelbrot.probes.system:SystemLoadGeneric',
             ],
         'io.mandelbrot.system': [
             'io.mandelbrot.system.GenericHost=mandelbrot.systems.generic:GenericHost',

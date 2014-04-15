@@ -1,0 +1,33 @@
+[agent]
+supervisor = http://supervisor.mandelbrot.io
+enable srv records = true
+ssl client certificate file = /etc/pki/tls/certs/mandelbrot-client.crt
+ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt 
+site moids file = /etc/mandelbrot/moids.site
+local spool directory = /var/spool/mandelbrot
+
+[system]
+system type = io.mandelbrot.system.GenericHost
+display name = My Host
+description = "this is a generic host description"
+tags = "server" "mandelbrot.io" "host" "generic"
+
+[probes]
+default probe interval = 30 seconds
+default probe splay = 5 seconds
+
+[probe:/load]
+probe type = io.mandelbrot.probe.SystemLoadGeneric
+
+[endpoints]
+
+[endpoint:alerts]
+accepts = [ io.mandelbrot.* ]
+endpoint type = io.mandelbrot.endpoint.ZeromqEndpoint
+endpoint = tcp://data.mandelbrot.io:9999
+subscription key = alerts
+
+[maintenance]
+default editor = vi
+editor template = /etc/mandelbrot/maintenance.template
+
