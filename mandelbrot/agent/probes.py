@@ -80,22 +80,21 @@ class ProbeRunner(object):
         self._call = LoopingCall(self.call)
 
     def call(self):
-        objectid = self.probe.id
+        proberef = self.probe.ref
         try:
             # convert evaluation to messages if necessary
             result = self.probe.probe()
             if isinstance(result, Evaluation):
-                eval = result
-                logger.debug("probe %s evaluates %s", objectid, eval)
-                messages = [StatusMessage(objectid, eval.state, eval.summary, eval.detail, eval.timestamp)]
-                if eval.metrics is not None:
-                    messages.append(MetricsMessage(objectid, eval.metrics, eval.timestamp))
-                if eval.events is not None:
-                    messages.append(EventsMessage(objectid, eval.events, eval.timestamp))
-                if eval.metrics is not None:
-                    messages.append(MetricsMessage(objectid, eval.metrics, eval.timestamp))
-                if eval.snapshot is not None:
-                    messages.append(SnapshotMessage(objectid, eval.snapshot, eval.timestamp))
+                logger.debug("probe %s evaluates %s", proberef, result)
+                messages = [StatusMessage(proberef, result.health, result.summary, result.timestamp, result.detail)]
+                if result.metrics is not None:
+                    messages.append(MetricsMessage(proberef, result.metrics, result.timestamp))
+                if result.events is not None:
+                    messages.append(EventsMessage(proberef, result.events, result.timestamp))
+                if result.metrics is not None:
+                    messages.append(MetricsMessage(proberef, result.metrics, result.timestamp))
+                if result.snapshot is not None:
+                    messages.append(SnapshotMessage(proberef, result.snapshot, result.timestamp))
             # otherwise pass data along without conversion
             else:
                 messages = result
@@ -110,7 +109,7 @@ class ProbeRunner(object):
                 self._lastexctype = None
         except Exception, e:
             if self._lastexctype is None or isinstance(e, self._lastexctype):
-                logger.warning("probe %s generates error: %s", objectid, e)
+                logger.warning("probe %s generates error: %s", proberef, e)
                 self._lastexctype = type(e)
 
     def start(self):

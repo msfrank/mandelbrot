@@ -17,7 +17,7 @@
 
 import os, psutil
 from mandelbrot.probes import Probe
-from mandelbrot.evaluation import Evaluation, EvaluationState
+from mandelbrot.evaluation import Evaluation, Health
 
 
 class SystemLoad(Probe):
@@ -30,7 +30,7 @@ class SystemLoad(Probe):
         load1, load5, load15 = os.getloadavg()
         ncores = psutil.cpu_count()
         summary = "load average is %.1f %.1f %.1f, detected %i cores" % (load1,load5,load15,ncores)
-        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
+        return Evaluation(Health.HEALTHY, summary)
 
 class SystemCPU(Probe):
     """
@@ -50,7 +50,7 @@ class SystemCPU(Probe):
         system = times.system
         idle = times.idle
         summary = "CPU utilization is %.1f%% user, %.1f%% system, %.1f%% idle, %.1f%% nice" % (user,system,idle,nice)
-        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
+        return Evaluation(Health.HEALTHY, summary)
 
 class SystemMemory(Probe):
     """
@@ -66,4 +66,4 @@ class SystemMemory(Probe):
         swapused = swap.percent
         swaptotal = swap.total
         summary = "%.1f%% used of %i bytes of physical memory; %.1f%% used of %i bytes of swap" % (memused,memtotal,swapused,swaptotal)
-        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
+        return Evaluation(Health.HEALTHY, summary)

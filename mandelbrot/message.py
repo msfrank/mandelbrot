@@ -20,82 +20,77 @@ import json
 class Message(object):
     """
     """
-    def __init__(self, objectid, msgtype):
-        self.objectid = objectid
+    def __init__(self, msgtype):
         self.msgtype = msgtype
-
-    VERSION = 1
 
     def __str__(self):
         return self.tojson()
 
-    def message2json(self, msgdata):
-        return json.dumps({
-            'v': Message.VERSION,
-            'objectId': self.objectid,
-            'type': self.msgtype,
-            'data': msgdata
-            })
+    def message2json(self, payload):
+        return json.dumps({'messageType': self.msgtype, 'payload': payload})
 
     def tojson(self):
         raise NotImplementedError()
 
-class StatusMessage(Message):
+class MandelbrotMessage(Message):
     """
     """
-    def __init__(self, objectid, state, summary, detail=None, timestamp=None):
-        self.state = state
+    def __init__(self, source, msgtype):
+        Message.__init__(self, msgtype)
+        self.source = source
+
+    def message2json(self, payload):
+        payload['source'] = self.source
+        return Message.message2json(self, payload)
+
+class StatusMessage(MandelbrotMessage):
+    """
+    """
+    def __init__(self, source, health, summary, timestamp, detail=None):
+        self.health = health
         self.summary = summary
-        self.detail = detail
         self.timestamp = timestamp
-        Message.__init__(self, objectid, 'io.mandelbrot.message.Status')
+        self.detail = detail
+        MandelbrotMessage.__init__(self, source, 'io.mandelbrot.message.StatusMessage')
 
     def tojson(self):
-        msgdata = {'state': self.state, 'summary': self.summary}
+        msgdata = {'health': self.health, 'summary': self.summary, 'timestamp': self.timestamp}
         if self.detail is not None:
             msgdata['detail'] = self.detail
-        if self.timestamp is not None:
-            msgdata['timestamp'] = self.timestamp
         return self.message2json(msgdata)
 
-class MetricsMessage(Message):
+class MetricsMessage(MandelbrotMessage):
     """
     """
-    def __init__(self, objectid, metrics, timestamp=None):
+    def __init__(self, source, metrics, timestamp):
         self.metrics = metrics
         self.timestamp = timestamp
-        Message.__init__(self, objectid, 'io.mandelbrot.message.Metrics')
+        MandelbrotMessage.__init__(self, source, 'io.mandelbrot.message.MetricsMessage')
 
     def tojson(self):
-        msgdata = {'metrics': self.metrics}
-        if self.timestamp is not None:
-            msgdata['timestamp'] = self.timestamp
+        msgdata = {'metrics': self.metrics, 'timestamp': self.timestamp}
         return self.message2json(msgdata)
 
-class EventsMessage(Message):
+class EventsMessage(MandelbrotMessage):
     """
     """
-    def __init__(self, objectid, events, timestamp=None):
+    def __init__(self, source, events, timestamp):
         self.events = events
         self.timestamp = timestamp
-        Message.__init__(self, objectid, 'io.mandelbrot.message.Events')
+        MandelbrotMessage.__init__(self, objectid, 'io.mandelbrot.message.EventsMessage')
 
     def tojson(self):
-        msgdata = {'events': self.events}
-        if self.timestamp is not None:
-            msgdata['timestamp'] = self.timestamp
+        msgdata = {'events': self.events, 'timestamp': self.timestamp}
         return self.message2json(msgdata)
 
-class SnapshotMessage(Message):
+class SnapshotMessage(MandelbrotMessage):
     """
     """
-    def __init__(self, objectid, snapshot, timestamp=None):
+    def __init__(self, source, snapshot, timestamp):
         self.snapshot = snapshot
         self.timestamp = timestamp
-        Message.__init__(self, objectid, 'io.mandelbrot.message.Snapshot')
+        MandelbrotMessage.__init__(self, source, 'io.mandelbrot.message.SnapshotMessage')
 
     def tojson(self):
-        msgdata = {'snapshot': self.snapshot}
-        if self.timestamp is not None:
-            msgdata['timestamp'] = self.timestamp
+        msgdata = {'snapshot': self.snapshot, 'timestamp': self.timestamp}
         return self.message2json(msgdata)

@@ -43,3 +43,15 @@ class MBObject(MutableMapping):
 
     def __len__(self):
         return len(self.children)
+
+    def get_ref(self):
+        obj = self
+        segments = list()
+        while obj is not None:
+            segments.insert(0, obj.get_id())
+            obj = obj.parent
+        return "/".join(segments)
+
+    @property
+    def ref(self):
+        return self.get_ref()
