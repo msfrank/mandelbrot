@@ -16,15 +16,19 @@ default probe interval = 30 seconds
 default probe splay = 5 seconds
 
 [probe:/load]
-probe type = io.mandelbrot.probe.SystemLoadGeneric
+probe type = io.mandelbrot.probe.SystemLoad
+
+[probe:/cpu]
+probe type = io.mandelbrot.probe.SystemCPU
+
+[probe:/memory]
+probe type = io.mandelbrot.probe.SystemMemory
 
 [endpoints]
 
 [endpoint:alerts]
 accepts = [ io.mandelbrot.* ]
-endpoint type = io.mandelbrot.endpoint.ZeromqEndpoint
-endpoint = tcp://data.mandelbrot.io:9999
-subscription key = alerts
+endpoint type = io.mandelbrot.endpoint.DummyEndpoint
 
 [maintenance]
 default editor = vi

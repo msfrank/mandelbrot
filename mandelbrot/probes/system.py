@@ -15,43 +15,55 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+import os, psutil
 from mandelbrot.probes import Probe
 from mandelbrot.evaluation import Evaluation, EvaluationState
 
-class SystemLoadLinux(Probe):
+
+class SystemLoad(Probe):
     """
     """
     def get_type(self):
-        return "io.mandelbrot.probe.SystemLoadLinux"
-
-    def probe(self):
-        with open('/proc/loadavg', 'r') as f:
-            fields = [field for field in f.readline().split(' ') if field != '']
-            load1  = float(fields[0])
-            load5  = float(fields[1])
-            load15 = float(fields[2])
-        with open('/proc/cpuinfo', 'r') as f:
-            ncores = 0
-            for line in f.readlines():
-                try:
-                    name,value = line.split(':', 1)
-                    name = name.strip()
-                    value = value.lstrip()
-                    if name.lower() == 'processor':
-                        ncores += 1
-                except:
-                    pass
-        summary = "load average is %.1f %.1f %.1f, detected %i cores" % (load1,load5,load15,ncores)
-        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
-
-class SystemLoadGeneric(Probe):
-    """
-    """
-    def get_type(self):
-        return "io.mandelbrot.probe.SystemLoadGeneric"
+        return "io.mandelbrot.probe.SystemLoad"
 
     def probe(self):
         load1, load5, load15 = os.getloadavg()
-        summary = "load average is %.1f %.1f %.1f" % (load1,load5,load15)
+        ncores = psutil.cpu_count()
+        summary = "load average is %.1f %.1f %.1f, detected %i cores" % (load1,load5,load15,ncores)
+        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
+
+class SystemCPU(Probe):
+    """
+    """
+    def __init__(self):
+        Probe.__init__(self)
+        # throw away the first value
+        psutil.cpu_times_percent()
+
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemCPU"
+
+    def probe(self):
+        times = psutil.cpu_times_percent()
+        user = times.user
+        nice = times.nice
+        system = times.system
+        idle = times.idle
+        summary = "CPU utilization is %.1f%% user, %.1f%% system, %.1f%% idle, %.1f%% nice" % (user,system,idle,nice)
+        return Evaluation(EvaluationState.STATE_HEALTHY, summary)
+
+class SystemMemory(Probe):
+    """
+    """
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemMemory"
+
+    def probe(self):
+        memory = psutil.virtual_memory()
+        memused = memory.percent
+        memtotal = memory.total
+        swap = psutil.swap_memory()
+        swapused = swap.percent
+        swaptotal = swap.total
+        summary = "%.1f%% used of %i bytes of physical memory; %.1f%% used of %i bytes of swap" % (memused,memtotal,swapused,swaptotal)
         return Evaluation(EvaluationState.STATE_HEALTHY, summary)

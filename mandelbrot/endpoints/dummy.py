@@ -19,13 +19,13 @@ from mandelbrot.endpoints import Endpoint
 from mandelbrot.message import Message
 from mandelbrot.loggers import getLogger
 
-logger = getLogger('mandelbrot.endpoints.zeromq')
+logger = getLogger('mandelbrot.endpoints.dummy')
 
-class ZeromqEndpoint(Endpoint):
+class DummyEndpoint(Endpoint):
     """
     """
     def configure(self, section):
         pass
 
     def send(self, message):
-        logger.debug("sending message %s", message)
+        logger.debug("received message: %s", message)

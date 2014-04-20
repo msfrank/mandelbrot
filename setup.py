@@ -20,6 +20,8 @@ setup(
         'zope.interface',
         'twisted >= 13.2.0',
         'pesky-settings >= 0.0.1',
+        'psutil >= 2.1.0',
+        'tabulate >= 0.7.2',
         'python-daemon >= 1.5.5',
         'setuptools',
         ],
@@ -40,6 +42,7 @@ setup(
     packages=[
         'mandelbrot',
         'mandelbrot.agent',
+        'mandelbrot.client',
         'mandelbrot.command',
         'mandelbrot.endpoints',
         'mandelbrot.probes',
@@ -48,13 +51,16 @@ setup(
     entry_points={
         'console_scripts': [
             'mandelbrot-agent=mandelbrot.command.agent:main',
+            'mandelbrot-client=mandelbrot.command.client:main',
             ],
         'io.mandelbrot.endpoint': [
-            'io.mandelbrot.endpoint.ZeromqEndpoint=mandelbrot.endpoints.zeromq:ZeromqEndpoint',
+            'io.mandelbrot.endpoint.DummyEndpoint=mandelbrot.endpoints.dummy:DummyEndpoint',
+            'io.mandelbrot.endpoint.HTTPEndpoint=mandelbrot.endpoints.http:HTTPEndpoint',
             ],
         'io.mandelbrot.probe': [
-            'io.mandelbrot.probe.SystemLoadLinux=mandelbrot.probes.system:SystemLoadLinux',
-            'io.mandelbrot.probe.SystemLoadGeneric=mandelbrot.probes.system:SystemLoadGeneric',
+            'io.mandelbrot.probe.SystemLoad=mandelbrot.probes.system:SystemLoad',
+            'io.mandelbrot.probe.SystemCPU=mandelbrot.probes.system:SystemCPU',
+            'io.mandelbrot.probe.SystemMemory=mandelbrot.probes.system:SystemMemory',
             ],
         'io.mandelbrot.system': [
             'io.mandelbrot.system.GenericHost=mandelbrot.systems.generic:GenericHost',
