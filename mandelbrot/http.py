@@ -39,6 +39,8 @@ def as_json(data):
             pass
         def stopProducing(self):
             pass
+    if hasattr(data, '__dump__'):
+        return JsonProducer(data.__dump__())
     return JsonProducer(data)
 
 def from_json(data, proto=None):

@@ -26,11 +26,8 @@ class Message(object):
     def __str__(self):
         return self.tojson()
 
-    def message2json(self, payload):
-        return json.dumps({'messageType': self.msgtype, 'payload': payload})
-
-    def tojson(self):
-        raise NotImplementedError()
+    def __dump__(self):
+        return {'messageType': self.msgtype}
 
 class MandelbrotMessage(Message):
     """
@@ -39,9 +36,10 @@ class MandelbrotMessage(Message):
         Message.__init__(self, msgtype)
         self.source = source
 
-    def message2json(self, payload):
-        payload['source'] = self.source
-        return Message.message2json(self, payload)
+    def __dump__(self):
+        data = Message.__dump__(self)
+        data['payload'] = {'source': self.source}
+        return data
 
 class StatusMessage(MandelbrotMessage):
     """
@@ -53,11 +51,13 @@ class StatusMessage(MandelbrotMessage):
         self.detail = detail
         MandelbrotMessage.__init__(self, source, 'io.mandelbrot.message.StatusMessage')
 
-    def tojson(self):
-        msgdata = {'health': self.health, 'summary': self.summary, 'timestamp': self.timestamp}
+    def __dump__(self):
+        data = MandelbrotMessage.__dump__(self)
+        status = data['payload']
+        status.update({'health': self.health, 'summary': self.summary, 'timestamp': self.timestamp})
         if self.detail is not None:
-            msgdata['detail'] = self.detail
-        return self.message2json(msgdata)
+            status['detail'] = self.detail
+        return data
 
 class MetricsMessage(MandelbrotMessage):
     """

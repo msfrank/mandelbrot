@@ -1,5 +1,5 @@
 [agent]
-supervisor url = http://localhost
+supervisor url = http://localhost:8080
 use srv records = true
 ssl client certificate file = /etc/pki/tls/certs/mandelbrot-client.crt
 ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt 
@@ -26,9 +26,14 @@ probe type = io.mandelbrot.probe.SystemMemory
 
 [endpoints]
 
-[endpoint:alerts]
+#[endpoint:dummy]
+#accepts = [ io.mandelbrot.* ]
+#endpoint type = io.mandelbrot.endpoint.DummyEndpoint
+
+[endpoint:http]
 accepts = [ io.mandelbrot.* ]
-endpoint type = io.mandelbrot.endpoint.DummyEndpoint
+endpoint type = io.mandelbrot.endpoint.HTTPEndpoint
+endpoint url = http://localhost:8080
 
 [maintenance]
 default editor = vi

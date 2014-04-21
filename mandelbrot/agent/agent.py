@@ -18,14 +18,13 @@
 import Queue, urlparse, pprint
 from twisted.internet import reactor
 from twisted.application.service import MultiService
-from twisted.web.client import Agent as HttpAgent
 from twisted.web.http_headers import Headers
 
 from mandelbrot.plugin import PluginManager
 from mandelbrot.agent.inventory import InventoryDatabase
 from mandelbrot.agent.probes import ProbeScheduler
 from mandelbrot.agent.endpoints import EndpointWriter
-from mandelbrot.agent.http import JsonProducer
+from mandelbrot.http import http, as_json
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 from mandelbrot import versionstring
 
@@ -77,28 +76,25 @@ class Agent(MultiService):
         return {'uri': self.inventory.root.get_id(), 'spec': makespec(self.inventory.root)} 
 
     def startService(self):
-        # start child services 
-        MultiService.startService(self)
-        # register with supervisor
         registration = self.makeregistration()
-        url = urlparse.urljoin(self.supervisor, '1/registry')
+        url = urlparse.urljoin(self.supervisor, 'objects/systems')
         logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
-        self.agent = HttpAgent(reactor)
-        headers = Headers({
-            'Content-Type': ['application/json'],
-            'User-Agent': ['mandelbrot-agent/' + versionstring()]
-        })
+        self.agent = http.agent()
+        headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
         logger.debug("POST %s\n%s", url, pprint.pformat(registration))
-        defer = self.agent.request('POST', url, headers, JsonProducer(registration))
-        defer.addCallbacks(self.onRegistration, self.onFailure)
+        defer = self.agent.request('POST', url, headers, as_json(registration))
+        defer.addCallbacks(self.onresponse, self.onfailure)
 
-    def onRegistration(self, response):
+    def onresponse(self, response):
         logger.debug("registration returned %i %s", response.code, response.phrase)
-        expires = response.headers.getRawHeaders('Expires')
-        cacheControl = response.headers.getRawHeaders('Cache-Control')
+        defer = http.read_body(response)
+        defer.addCallbacks(self.onregistration, self.onfailure)
 
-    def onFailure(self, failure):
-        logger.debug("registration failed: %s" % failure.getErrorMessage())
+    def onregistration(self, registration):
+        MultiService.startService(self)
+
+    def onfailure(self, failure):
+        logger.debug("registration failed: %s", failure.getErrorMessage())
 
     def run(self):
         logger.info("-- starting mandelbrot agent --")
