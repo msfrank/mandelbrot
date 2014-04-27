@@ -53,7 +53,7 @@ setup(
     entry_points={
         'console_scripts': [
             'mandelbrot-agent=mandelbrot.command.agent:main',
-            'mandelbrot-client=mandelbrot.command.client:main',
+            'mandelbrot=mandelbrot.command.client:main',
             ],
         'io.mandelbrot.endpoint': [
             'io.mandelbrot.endpoint.DummyEndpoint=mandelbrot.endpoints.dummy:DummyEndpoint',

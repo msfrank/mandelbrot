@@ -32,7 +32,7 @@ def main():
           usage="[OPTIONS...] COMMAND",
           version=versionstring(),
           description="Mandelbrot client commands",
-          appname="mandelbrot-client",
+          appname="mandelbrot",
           confbase="/etc/mandelbrot",
           section="client",
           options=[

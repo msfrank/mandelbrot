@@ -19,9 +19,9 @@ import collections, calendar
 from urllib import urlencode
 from urlparse import urlparse, urljoin
 from twisted.internet import reactor
-from tabulate import tabulate
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.timerange import parse_timerange
+from mandelbrot.table import sort_results, render_table
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 
 logger = getLogger('mandelbrot.client.system')
@@ -31,7 +31,7 @@ def system_status_callback(ns):
     """
     section = ns.get_section('client')
     server = section.get_str('host')
-    tablefmt = section.get_str('table format', 'simple')
+    tablefmt = section.get_str('status table format', 'simple')
     (ref,) = ns.get_args(str, minimum=1, names=('REF'))
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
@@ -42,22 +42,9 @@ def system_status_callback(ns):
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body):
         logger.debug("received body %s", body)
-        states = from_json(body)
-        table = collections.OrderedDict()
-        table['probeRef'] = []
-        table['lifecycle'] = []
-        table['health'] = []
-        table['summary'] = []
-        table['lastChange'] = []
-        table['lastUpdate'] = []
-        table['squelched'] = []
-        for state in sorted(states, key=lambda s: s['probeRef']):
-            for name,column in table.items():
-                if name in state:
-                    column.append(state[name])
-                else:
-                    column.append(None)
-        print tabulate(table, headers='keys', tablefmt=tablefmt)
+        states = sort_results(from_json(body), ('probeRef'))
+        columns = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+        print render_table(states, expand=False, columns=columns, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -78,13 +65,13 @@ def system_history_callback(ns):
     #fields = section.get_list('history fields')
     #sort = section.get_list('history sort'
     #columns = section.get_list('history columns')
-    tablefmt = section.get_str('table format', 'simple')
+    tablefmt = section.get_str('history table format', 'simple')
     (ref,) = ns.get_args(str, minimum=1, names=('REF'))
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
-    # build query params
+    # build query url
     params = list()
     if timerange is not None:
         start,end = parse_timerange(timerange)
@@ -94,30 +81,17 @@ def system_history_callback(ns):
             params.append(('to', calendar.timegm(end.utctimetuple())))
     if limit is not None:
         params.append(('limit', limit))
-    #
     qs = urlencode(params)
     url = urlparse(urljoin(server, 'objects/systems/' + ref + '/collections/history?' + qs))
+    # execute query
     logger.debug("connecting to %s://%s", url.scheme, url.netloc)
     logger.debug("GET %s?%s", url.path, url.query)
     defer = http.agent(timeout=3).request('GET', url.geturl())
     def onbody(body):
         logger.debug("received body %s", body)
-        states = from_json(body)
-        table = collections.OrderedDict()
-        table['probeRef'] = []
-        table['lifecycle'] = []
-        table['health'] = []
-        table['summary'] = []
-        table['lastChange'] = []
-        table['lastUpdate'] = []
-        table['squelched'] = []
-        for state in sorted(states, key=lambda s: s['probeRef']):
-            for name,column in table.items():
-                if name in state:
-                    column.append(state[name])
-                else:
-                    column.append(None)
-        print tabulate(table, headers='keys', tablefmt=tablefmt)
+        history = sort_results(from_json(body), ('probeRef'))
+        columns=('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+        print render_table(history, expand=False, columns=columns, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -133,30 +107,22 @@ def system_notifications_callback(ns):
     """
     section = ns.get_section('client')
     server = section.get_str('host')
-    tablefmt = section.get_str('table format', 'simple')
+    tablefmt = section.get_str('notifications table format', 'simple')
     (ref,) = ns.get_args(str, minimum=1, names=('REF'))
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
+    # build query url
     url = urljoin(server, 'objects/systems/' + ref + '/collections/notifications')
+    # execute query
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body):
         logger.debug("received body %s", body)
-        states = from_json(body)
-        table = collections.OrderedDict()
-        table['probeRef'] = []
-        table['timestamp'] = []
-        table['description'] = []
-        table['correlation'] = []
-        for state in sorted(states, key=lambda s: s['probeRef']):
-            for name,column in table.items():
-                if name in state:
-                    column.append(state[name])
-                else:
-                    column.append(None)
-        print tabulate(table, headers='keys', tablefmt=tablefmt)
+        notifications = sort_results(from_json(body), ('probeRef'))
+        columns = ('probeRef','timestamp','description','correlation')
+        print render_table(notifications, expand=False, columns=columns, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
