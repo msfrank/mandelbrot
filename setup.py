@@ -23,6 +23,8 @@ setup(
         'psutil >= 2.1.0',
         'tabulate >= 0.7.2',
         'python-daemon >= 1.5.5',
+        'pyparsing >= 2.0.2',
+        'python-dateutil >= 2.2',
         'setuptools',
         ],
     # package classifiers for PyPI
