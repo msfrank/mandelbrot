@@ -29,8 +29,14 @@ logger = getLogger('mandelbrot.client.system')
 def system_status_callback(ns):
     """
     """
+    # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    # client:system:history settings
+    section = ns.get_section('client:system:status')
+    statusfields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+    fields = section.get_list('status fields', historyfields)
+    sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
     (ref,) = ns.get_args(str, minimum=1, names=('REF'))
     if section.get_bool("debug", False):
@@ -42,9 +48,8 @@ def system_status_callback(ns):
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body):
         logger.debug("received body %s", body)
-        states = sort_results(from_json(body), ('probeRef'))
-        columns = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
-        print render_table(states, expand=False, columns=columns, tablefmt=tablefmt)
+        status = sort_results(from_json(body), sort)
+        print render_table(status, expand=False, columns=fields, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -58,13 +63,16 @@ def system_status_callback(ns):
 def system_history_callback(ns):
     """
     """
+    # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    # client:system:history settings
+    section = ns.get_section('client:system:history')
     timerange = section.get_str('history timerange')
     limit = section.get_int('history limit')
-    #fields = section.get_list('history fields')
-    #sort = section.get_list('history sort'
-    #columns = section.get_list('history columns')
+    historyfields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+    fields = section.get_list('history fields', historyfields)
+    sort = section.get_list('history sort', ['probeRef'])
     tablefmt = section.get_str('history table format', 'simple')
     (ref,) = ns.get_args(str, minimum=1, names=('REF'))
     if section.get_bool("debug", False):
@@ -89,9 +97,8 @@ def system_history_callback(ns):
     defer = http.agent(timeout=3).request('GET', url.geturl())
     def onbody(body):
         logger.debug("received body %s", body)
-        history = sort_results(from_json(body), ('probeRef'))
-        columns=('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
-        print render_table(history, expand=False, columns=columns, tablefmt=tablefmt)
+        history = sort_results(from_json(body), sort)
+        print render_table(history, expand=False, columns=fields, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -105,8 +112,16 @@ def system_history_callback(ns):
 def system_notifications_callback(ns):
     """
     """
+    # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    # client:system:notifications settings
+    section = ns.get_section('client:system:notifications')
+    timerange = section.get_str('notifications timerange')
+    limit = section.get_int('notifications limit')
+    _fields = ('probeRef','timestamp','description','correlation')
+    fields = section.get_list('notifications fields', _fields)
+    sort = section.get_list('notifications sort', ['probeRef'])
     tablefmt = section.get_str('notifications table format', 'simple')
     (ref,) = ns.get_args(str, minimum=1, names=('REF'))
     if section.get_bool("debug", False):
@@ -120,9 +135,8 @@ def system_notifications_callback(ns):
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body):
         logger.debug("received body %s", body)
-        notifications = sort_results(from_json(body), ('probeRef'))
-        columns = ('probeRef','timestamp','description','correlation')
-        print render_table(notifications, expand=False, columns=columns, tablefmt=tablefmt)
+        notifications = sort_results(from_json(body), sort)
+        print render_table(notifications, expand=False, columns=fields, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -154,6 +168,8 @@ system_actions = Action("system",
                        usage="[OPTIONS] REF",
                        description="get the current status of REF",
                        options=[
+                         Option('f', 'fields', 'status fields', help="display only the specified FIELDS", metavar="FIELDS"),
+                         Option('s', 'sort', 'status sort', help="sort results using the specified FIELDS", metavar="FIELDS"),
                          Option('T', 'table-format', 'status table format', help="display result using the specified FMT", metavar="FMT")
                          ],
                        callback=system_status_callback),
@@ -165,7 +181,6 @@ system_actions = Action("system",
                          Option('l', 'limit', 'history limit', help="return a maximum of LIMIT results", metavar="LIMIT"),
                          Option('f', 'fields', 'history fields', help="display only the specified FIELDS", metavar="FIELDS"),
                          Option('s', 'sort', 'history sort', help="sort results using the specified FIELDS", metavar="FIELDS"),
-                         Option('c', 'columns', 'history columns', help="place result columns in the order specified by COLUMNS", metavar="COLUMNS"),
                          Option('T', 'table-format', 'history table format', help="display result using the specified FMT", metavar="FMT")
                        ],
                        callback=system_history_callback),
@@ -173,6 +188,10 @@ system_actions = Action("system",
                        usage="[OPTIONS] REF",
                        description="get notifications for REF",
                        options=[
+                         Option('t', 'range', 'notifications timerange', help="retrieve notifications within the specified TIMERANGE", metavar="TIMERANGE"),
+                         Option('l', 'limit', 'notifications limit', help="return a maximum of LIMIT results", metavar="LIMIT"),
+                         Option('f', 'fields', 'notifications fields', help="display only the specified FIELDS", metavar="FIELDS"),
+                         Option('s', 'sort', 'notifications sort', help="sort results using the specified FIELDS", metavar="FIELDS"),
                          Option('T', 'table-format', 'table format', help="display result using the specified FMT", metavar="FMT")
                        ],
                        callback=system_notifications_callback),

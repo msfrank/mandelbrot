@@ -23,13 +23,13 @@ def sort_results(results, sortfields, converters=None):
     """
     def extractkey(row):
         key = list()
-        for field in sortfields:
-            if not field in results:
+        for column in sortfields:
+            if not column in row:
                 key.append(None)
             else:
-                value = results[field]
-                if converters is not None and field in converters:
-                    convert = converters[field]
+                value = row[column]
+                if converters is not None and column in converters:
+                    convert = converters[column]
                     key.append(convert(value))
                 else:
                     key.append(value)
