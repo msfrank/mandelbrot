@@ -1,0 +1,18 @@
+usage scenarios
+===============
+
+* group all probe systems in a cluster together
+  * root proberef refers to each system
+  * e.g. all webserver hosts
+
+* group all probes of a particular type
+  * e.g. load probe for all hosts in a network
+
+* group all probe systems with a specific scheme
+  * e.g. all AWS instances
+
+* combinations of the above groupings
+  * e.g. load probes for webservers which are AWS instances
+
+* ad-hoc ephemeral groupings
+  * e.g. sysadmin creates a short-lived group for hosts which were affected by a particular issue

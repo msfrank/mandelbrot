@@ -1,0 +1,20 @@
+
+fqdn: fully qualified domain name
+  fqdn:www.google.com
+  fqdn:Deunan.local
+
+ip: IPv4 address
+  ip:10.0.0.1
+
+ipv6: IPv6 address
+  ipv6:2001:0db8:85a3:0000:0000:8a2e:0370:7334
+  ipv6:::1
+
+aws: amazon AWS resource
+  aws:ec2:i-abcdef01
+
+tcp: generic TCP network resource
+  tcp:www.google.com:80
+
+udp: generic UDP network resource
+  udp:8.8.8.8:53

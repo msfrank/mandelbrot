@@ -1,4 +1,4 @@
-# Copyright 2010,2011 Michael Frank <msfrank@syntaxjockey.com>
+# Copyright 2014 Michael Frank <msfrank@syntaxjockey.com>
 #
 # This file is part of Mandelbrot.
 #
