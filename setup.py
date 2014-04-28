@@ -22,6 +22,7 @@ setup(
         'pesky-settings >= 0.0.1',
         'psutil >= 2.1.0',
         'tabulate >= 0.7.2',
+        'setproctitle >= 1.1.8',
         'python-daemon >= 1.5.5',
         'pyparsing >= 2.0.2',
         'python-dateutil >= 2.2',

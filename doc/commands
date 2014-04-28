@@ -1,0 +1,50 @@
+
+---------------------
+client administration
+---------------------
+
+mandelbrot status [PATH...]
+mandelbrot acknowledge [PATH...]
+mandelbrot unacknowledge [PATH...]
+mandelbrot disable [PATH...]
+mandelbrot enable [PATH...]
+
+
+------------------------------
+query with varying granularity
+------------------------------
+
+mandelbrot probe status PROBE...
+mandelbrot probe history PROBE...
+mandelbrot probe notifications PROBE...
+mandelbrot probe events PROBE...
+mandelbrot probe snapshots PROBE...
+
+mandelbrot system status SYSTEM...
+mandelbrot system history SYSTEM...
+mandelbrot system notifications SYSTEM...
+mandelbrot system events SYSTEM...
+mandelbrot system snapshots SYSTEM...
+
+mandelbrot group status GROUP...
+mandelbrot group history GROUP...
+mandelbrot group notifications GROUP...
+mandelbrot group events GROUP...
+mandelbrot group snapshots GROUP...
+
+
+----------------------
+working with snapshots
+----------------------
+
+mandelbrot snapshot upload REF
+mandelbrot snapshot show ID
+mandelbrot snapshot delete ID
+
+
+--------------------
+working with metrics
+--------------------
+
+mandelbrot datasets list
+mandelbrot metrics 
