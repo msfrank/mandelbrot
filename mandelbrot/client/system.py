@@ -19,12 +19,21 @@ import collections, calendar
 from urllib import urlencode
 from urlparse import urlparse, urljoin
 from twisted.internet import reactor
+from mandelbrot.ref import parse_systemuri
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.timerange import parse_timerange
 from mandelbrot.table import sort_results, render_table
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 
 logger = getLogger('mandelbrot.client.system')
+
+from mandelbrot.table import millis2ctime, bool2checkbox
+renderers = {
+    'lastChange': millis2ctime,
+    'lastUpdate': millis2ctime,
+    'timestamp':  millis2ctime,
+    'squelched':  bool2checkbox,
+}
 
 def system_status_callback(ns):
     """
@@ -34,29 +43,33 @@ def system_status_callback(ns):
     server = section.get_str('host')
     # client:system:history settings
     section = ns.get_section('client:system:status')
-    statusfields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
-    fields = section.get_list('status fields', historyfields)
+    fields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+    fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
-    (ref,) = ns.get_args(str, minimum=1, names=('REF'))
+    (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI',))
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
-    url = urljoin(server, 'objects/systems/' + ref + '/properties/status')
+    url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status')
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
-    def onbody(body):
+    def onbody(body, code):
+        import ipdb; ipdb.set_trace()
         logger.debug("received body %s", body)
-        status = sort_results(from_json(body), sort)
-        print render_table(status, expand=False, columns=fields, tablefmt=tablefmt)
+        if code == 200:
+            status = sort_results(from_json(body), sort)
+            print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+        else:
+            print "error: " + from_json(body)['description']
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
         reactor.stop()
     def onresponse(response):
         logger.debug("received response %i %s", response.code, response.phrase)
-        http.read_body(response).addCallbacks(onbody, onfailure)
+        http.read_body(response).addCallbacks(onbody, onfailure, callbackArgs=(response.code,))
     defer.addCallbacks(onresponse, onfailure)
     reactor.run()
 
@@ -70,11 +83,11 @@ def system_history_callback(ns):
     section = ns.get_section('client:system:history')
     timerange = section.get_str('history timerange')
     limit = section.get_int('history limit')
-    historyfields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
-    fields = section.get_list('history fields', historyfields)
+    fields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+    fields = section.get_list('history fields', fields)
     sort = section.get_list('history sort', ['probeRef'])
     tablefmt = section.get_str('history table format', 'simple')
-    (ref,) = ns.get_args(str, minimum=1, names=('REF'))
+    (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
     else:
@@ -90,7 +103,7 @@ def system_history_callback(ns):
     if limit is not None:
         params.append(('limit', limit))
     qs = urlencode(params)
-    url = urlparse(urljoin(server, 'objects/systems/' + ref + '/collections/history?' + qs))
+    url = urlparse(urljoin(server, 'objects/systems/' + str(system) + '/collections/history?' + qs))
     # execute query
     logger.debug("connecting to %s://%s", url.scheme, url.netloc)
     logger.debug("GET %s?%s", url.path, url.query)
@@ -98,7 +111,7 @@ def system_history_callback(ns):
     def onbody(body):
         logger.debug("received body %s", body)
         history = sort_results(from_json(body), sort)
-        print render_table(history, expand=False, columns=fields, tablefmt=tablefmt)
+        print render_table(history, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -119,24 +132,24 @@ def system_notifications_callback(ns):
     section = ns.get_section('client:system:notifications')
     timerange = section.get_str('notifications timerange')
     limit = section.get_int('notifications limit')
-    _fields = ('probeRef','timestamp','description','correlation')
-    fields = section.get_list('notifications fields', _fields)
+    fields = ('probeRef','timestamp','description','correlation')
+    fields = section.get_list('notifications fields', fields)
     sort = section.get_list('notifications sort', ['probeRef'])
     tablefmt = section.get_str('notifications table format', 'simple')
-    (ref,) = ns.get_args(str, minimum=1, names=('REF'))
+    (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
     # build query url
-    url = urljoin(server, 'objects/systems/' + ref + '/collections/notifications')
+    url = urljoin(server, 'objects/systems/' + str(system) + '/collections/notifications')
     # execute query
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body):
         logger.debug("received body %s", body)
         notifications = sort_results(from_json(body), sort)
-        print render_table(notifications, expand=False, columns=fields, tablefmt=tablefmt)
+        print render_table(notifications, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         reactor.stop()
     def onfailure(failure):
         logger.debug("query failed: %s", failure.getErrorMessage())
@@ -147,15 +160,6 @@ def system_notifications_callback(ns):
     defer.addCallbacks(onresponse, onfailure)
     reactor.run()
     
-def system_acknowledge_callback(ns):
-    pass
-
-def system_squelch_callback(ns):
-    pass
-
-def system_unsquelch_callback(ns):
-    pass
-
 from pesky.settings.action import Action, NOACTION
 from pesky.settings.option import *
 
@@ -195,22 +199,5 @@ system_actions = Action("system",
                          Option('T', 'table-format', 'table format', help="display result using the specified FMT", metavar="FMT")
                        ],
                        callback=system_notifications_callback),
-                     Action("acknowledge",
-                       usage="[OPTIONS] REF",
-                       description="acknowledge REF",
-                       options=[
-                         Option('m', 'message', 'message', help="Use the given MESSAGE as the acknowledgement message", metavar="MESSAGE"),
-                         ],
-                       callback=system_acknowledge_callback),
-                     Action("disable",
-                       usage="[OPTIONS] REF",
-                       description="disable notifications for REF",
-                       options=[],
-                       callback=system_squelch_callback),
-                     Action("enable",
-                       usage="[OPTIONS] REF",
-                       description="enable notifications for REF",
-                       options=[],
-                       callback=system_unsquelch_callback),
                    ]
                  )

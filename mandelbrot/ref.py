@@ -17,21 +17,14 @@
 
 from urlparse import urlparse
 
-class ProbeRef(object):
+class SystemURI(object):
     """
     """
-    def __init__(self, scheme, location, segments):
+    def __init__(self, scheme, location):
         self._scheme = scheme
         self._location = location
-        self._segments = tuple(segments)
 
     def __str__(self):
-        return self.uri + self.path
-
-    @property
-    def uri(self):
-        if self._scheme is None or self._location is None:
-            return ''
         return self._scheme + ":" + self._location
 
     @property
@@ -41,6 +34,47 @@ class ProbeRef(object):
     @property
     def location(self):
         return self._location
+
+def parse_systemuri(string):
+    """
+    """
+    string = string.strip()
+    # verify there are no slashes in the uri
+    if len(string.split('/')) != 1:
+        raise Exception("invalid uri %s: forward slashes are not allowed in uri" % string)
+    # verify there is a scheme and location part
+    scheme,sep,location = string.partition(':')
+    if (scheme,sep,location) == (string,'',''):
+        raise Exception("invalid uri %s: scheme is missing" % string)
+    return SystemURI(scheme, location)
+
+class ProbeRef(object):
+    """
+    """
+    def __init__(self, uri, segments):
+        self._uri = uri
+        self._segments = tuple(segments)
+
+    def __str__(self):
+        if self._uri is None:
+            return self.path
+        return str(self.uri) + self.path
+
+    @property
+    def uri(self):
+        return self._uri
+
+    @property
+    def scheme(self):
+        if self._uri is None:
+            return None
+        return self._uri.scheme
+
+    @property
+    def location(self):
+        if self._uri is None:
+            return None
+        return self._uri.location
 
     @property
     def segments(self):
@@ -56,6 +90,8 @@ class ProbeRef(object):
         return False
 
 def parse_proberef(string):
+    """
+    """
     string = string.strip()
     # special case 1: 
     if string == '/':
@@ -68,11 +104,10 @@ def parse_proberef(string):
     if segments[0] == '':
         uri = None
     else:
-        uri = segments[0]
-    # verify there is a scheme and location part
-    scheme,sep,location = uri.partition(':')
-    if scheme,sep,location == (uri,'',''):
-        raise Exception("invalid proberef %s: uri part is malformed" % string)
+        try:
+            uri = parse_systemuri(segments[0])
+        except:
+            raise Exception("invalid proberef %s: uri part is malformed" % string)
     # parse each segment in path
     path = list()
     for segment in segments[1:]:
@@ -80,4 +115,4 @@ def parse_proberef(string):
         if segment == '':
             raise Exception("invalid proberef %s: empty path segment is not allowed" % string)
         path.append(segment)
-    return ProbeRef(scheme, location, path)
+    return ProbeRef(uri, path)

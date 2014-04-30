@@ -73,7 +73,7 @@ class Agent(MultiService):
             for name,child in obj.children.items():
                 children[name] = makespec(child)
             return {'objectType': obj.get_type(), 'metaData': obj.get_metadata(), 'children': children}
-        return {'uri': self.inventory.root.get_id(), 'spec': makespec(self.inventory.root)} 
+        return {'uri': self.inventory.root.get_id(), 'registration': makespec(self.inventory.root)} 
 
     def startService(self):
         registration = self.makeregistration()

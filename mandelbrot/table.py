@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import collections
+import collections, time
 from tabulate import tabulate
 
 def sort_results(results, sortfields, converters=None):
@@ -53,7 +53,7 @@ class OrderedMap(collections.Mapping):
     def __len__(self):
         return len(self._mapping)
 
-def render_table(results, expand=True, columns=None, converters=None, tablefmt='simple'):
+def render_table(results, expand=True, columns=None, renderers=None, tablefmt='simple'):
     """
     """
     data = dict()
@@ -68,9 +68,9 @@ def render_table(results, expand=True, columns=None, converters=None, tablefmt='
     for row in results:
         for name,value in row.items():
             # if schema converter function is defined, then convert the value
-            if converters is not None and name in converters:
-                convert = converters[name]
-                value = convert(value)
+            if renderers is not None and name in renderers:
+                render = renderers[name]
+                value = render(value)
             # if column exists, then append new value 
             try:
                 column = data[name]
@@ -100,3 +100,16 @@ def render_table(results, expand=True, columns=None, converters=None, tablefmt='
 
     # render the table
     return tabulate(table, headers, tablefmt)
+
+def millis2ctime(millis):
+    return time.ctime(millis / 1000.0)
+
+def bool2checkbox(value):
+    if value == True:
+        return "*"
+    return ""
+
+def bool2string(value):
+    if value == True:
+        return "true"
+    return "false"
