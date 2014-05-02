@@ -72,16 +72,8 @@ class Agent(MultiService):
         else:
             startLogging(None)
 
-    def makeregistration(self):
-        def makespec(obj):
-            children = {}
-            for name,child in obj.children.items():
-                children[name] = makespec(child)
-            return {'objectType': obj.get_type(), 'metaData': obj.get_metadata(), 'children': children}
-        return {'uri': self.inventory.root.get_id(), 'registration': makespec(self.inventory.root)} 
-
     def startService(self):
-        registration = self.makeregistration()
+        registration = {'uri': self.inventory.root.get_id(), 'registration': self.inventory.spec} 
         url = urlparse.urljoin(self.supervisor, 'objects/systems')
         logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
         self.agent = http.agent()
