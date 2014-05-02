@@ -101,3 +101,7 @@ class InventoryDatabase(object):
                 children[name] = makespec(child)
             return {'objectType': obj.get_type(), 'metaData': obj.get_metadata(), 'children': children}
         return makespec(self.root)
+
+    @property
+    def system(self):
+        return self.root.get_id()

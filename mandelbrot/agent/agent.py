@@ -26,6 +26,7 @@ from mandelbrot.plugin import PluginManager
 from mandelbrot.agent.inventory import InventoryDatabase
 from mandelbrot.agent.probes import ProbeScheduler
 from mandelbrot.agent.endpoints import EndpointWriter
+from mandelbrot.agent.xmlrpc import XMLRPCService
 from mandelbrot.http import http, as_json
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 from mandelbrot import defaults, versionstring
@@ -65,6 +66,10 @@ class Agent(MultiService):
         self.endpoints = EndpointWriter(self.plugins, self.queue)
         self.addService(self.endpoints)
         self.endpoints.configure(ns)
+        # configure xmlrpc
+        self.xmlrpc = XMLRPCService(self)
+        self.addService(self.xmlrpc)
+        self.xmlrpc.configure(ns)
         # configure logging
         logconfigfile = section.get_path('log config file', "%s.logconfig" % ns.appname)
         if section.get_bool("debug", False):
