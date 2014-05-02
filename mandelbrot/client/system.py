@@ -56,7 +56,6 @@ def system_status_callback(ns):
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body, code):
-        import ipdb; ipdb.set_trace()
         logger.debug("received body %s", body)
         if code == 200:
             status = sort_results(from_json(body), sort)
