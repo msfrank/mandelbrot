@@ -46,15 +46,14 @@ setup(
         'mandelbrot',
         'mandelbrot.agent',
         'mandelbrot.client',
-        'mandelbrot.command',
         'mandelbrot.endpoints',
         'mandelbrot.probes',
         'mandelbrot.systems',
         ],
     entry_points={
         'console_scripts': [
-            'mandelbrot-agent=mandelbrot.command.agent:main',
-            'mandelbrot=mandelbrot.command.client:main',
+            'mandelbrot-agent=mandelbrot.agent:main',
+            'mandelbrot=mandelbrot.client:main',
             ],
         'io.mandelbrot.endpoint': [
             'io.mandelbrot.endpoint.DummyEndpoint=mandelbrot.endpoints.dummy:DummyEndpoint',
