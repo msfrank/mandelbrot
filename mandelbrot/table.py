@@ -113,3 +113,9 @@ def bool2string(value):
     if value == True:
         return "true"
     return "false"
+
+def proberef2path(value):
+    try:
+        return parse_proberef(value).path
+    except:
+        return ""

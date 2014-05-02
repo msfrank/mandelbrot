@@ -43,7 +43,7 @@ def system_status_callback(ns):
     server = section.get_str('host')
     # client:system:history settings
     section = ns.get_section('client:system:status')
-    fields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+    fields = ('probeRef','lifecycle','health','summary','timestamp','lastChange','lastUpdate','squelched')
     fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
@@ -82,9 +82,9 @@ def system_history_callback(ns):
     section = ns.get_section('client:system:history')
     timerange = section.get_str('history timerange')
     limit = section.get_int('history limit')
-    fields = ('probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
+    fields = ('timestamp', 'probeRef','lifecycle','health','summary','lastChange','lastUpdate','squelched')
     fields = section.get_list('history fields', fields)
-    sort = section.get_list('history sort', ['probeRef'])
+    sort = section.get_list('history sort', ['timestamp'])
     tablefmt = section.get_str('history table format', 'simple')
     (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
     if section.get_bool("debug", False):
@@ -131,9 +131,9 @@ def system_notifications_callback(ns):
     section = ns.get_section('client:system:notifications')
     timerange = section.get_str('notifications timerange')
     limit = section.get_int('notifications limit')
-    fields = ('probeRef','timestamp','description','correlation')
+    fields = ('timestamp', 'probeRef', 'description', 'correlation')
     fields = section.get_list('notifications fields', fields)
-    sort = section.get_list('notifications sort', ['probeRef'])
+    sort = section.get_list('notifications sort', ['timestamp'])
     tablefmt = section.get_str('notifications table format', 'simple')
     (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
     if section.get_bool("debug", False):
