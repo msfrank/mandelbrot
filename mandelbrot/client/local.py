@@ -33,7 +33,7 @@ renderers = {
     'squelched':  bool2checkbox,
 }
 
-def local_status_callback(ns):
+def status_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
@@ -69,19 +69,19 @@ def local_status_callback(ns):
     reactor.run()
 
 
-def local_acknowledge_callback(ns):
+def acknowledge_callback(ns):
     pass
 
-def local_unacknowledge_callback(ns):
+def unacknowledge_callback(ns):
     pass
 
-def local_disable_callback(ns):
+def disable_callback(ns):
     pass
 
-def local_enable_callback(ns):
+def enable_callback(ns):
     pass
 
-def local_uptime_callback(ns):
+def agent_uptime_callback(ns):
     section = ns.get_section('client')
     server = section.get_str('host')
     url = 'http://localhost:9844/XMLRPC'
@@ -102,7 +102,7 @@ def local_uptime_callback(ns):
     defer.addCallbacks(onresponse, onfailure)
     reactor.run()
 
-def local_version_callback(ns):
+def agent_version_callback(ns):
     section = ns.get_section('client')
     server = section.get_str('host')
     url = 'http://localhost:9844/XMLRPC'
@@ -135,39 +135,46 @@ local_actions = [
         Option('s', 'sort', 'status sort', help="sort results using the specified FIELDS", metavar="FIELDS"),
         Option('T', 'table-format', 'status table format', help="display result using the specified FMT", metavar="FMT")
         ],
-      callback=local_status_callback),
+      callback=status_callback),
     Action("acknowledge",
       usage="[OPTIONS] [PATH...]",
       description="acknowledge unhealthy local PATH",
       options=[
         Option('m', 'message', 'message', help="Use the given MESSAGE as the acknowledgement message", metavar="MESSAGE"),
         ],
-      callback=local_acknowledge_callback),
+      callback=acknowledge_callback),
     Action("unacknowledge",
       usage="[OPTIONS] [PATH...]",
       description="remove acknowledgement of unhealthy local PATH",
       options=[
         Option('m', 'message', 'message', help="Use the given MESSAGE as the acknowledgement message", metavar="MESSAGE"),
         ],
-      callback=local_unacknowledge_callback),
+      callback=unacknowledge_callback),
     Action("disable",
       usage="[OPTIONS] [PATH...]",
       description="disable notifications for local PATH",
       options=[],
-      callback=local_disable_callback),
+      callback=disable_callback),
     Action("enable",
       usage="[OPTIONS] [PATH...]",
       description="enable notifications for local PATH",
       options=[],
-      callback=local_enable_callback),
-    Action("uptime",
-      usage="[OPTIONS]",
-      description="display the local agent process uptime",
-      options=[],
-      callback=local_uptime_callback),
-    Action("version",
-      usage="[OPTIONS]",
-      description="display the local agent process version",
-      options=[],
-      callback=local_version_callback),
+      callback=enable_callback),
     ]
+
+agent_actions = Action("agent",
+                  usage="COMMAND",
+                  description="Interact with the local agent process",
+                  callback=NOACTION,
+                  actions=[
+                    Action("uptime",
+                      usage="[OPTIONS]",
+                      description="display the local agent process uptime",
+                      options=[],
+                      callback=agent_uptime_callback),
+                    Action("version",
+                      usage="[OPTIONS]",
+                      description="display the local agent process version",
+                      options=[],
+                      callback=agent_version_callback),
+                  ])
