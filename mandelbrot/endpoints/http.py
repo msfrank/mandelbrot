@@ -30,13 +30,15 @@ class HTTPEndpoint(Endpoint):
     """
     def __init__(self):
         Endpoint.__init__(self)
-        self.agent = http.agent()
+        self.agent = None
 
     def configure(self, section):
         self.endpoint = section.get_str("endpoint url")
         Endpoint.configure(self, section)
 
     def send(self, message):
+        if self.agent is None:
+            self.agent = http.agent()
         if isinstance(message, MandelbrotMessage):
             uri = message.source.split('/')[0]
             url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri + '/actions/submit')

@@ -17,8 +17,6 @@
 
 import random, datetime, fnmatch
 from threading import Thread
-from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
 from twisted.application.service import MultiService
 from mandelbrot.loggers import getLogger
 

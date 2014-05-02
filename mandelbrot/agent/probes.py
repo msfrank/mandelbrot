@@ -16,7 +16,6 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import random, datetime, Queue
-from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 from twisted.application.service import Service
 from pesky.settings import ConfigureError
@@ -57,6 +56,7 @@ class ProbeScheduler(Service):
                 logger.warning("ignoring probe %s: %s", probepath, str(e))
 
     def startService(self):
+        from twisted.internet import reactor
         logger.debug("starting probe scheduler")
         for name,probe in self.probes.items():
             splay = random.uniform(0.1, timedelta_to_seconds(probe.splay))

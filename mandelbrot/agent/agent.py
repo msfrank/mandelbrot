@@ -15,10 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import Queue, urlparse, pprint
-from twisted.internet import reactor
+import sys, Queue, urlparse, pprint
 from twisted.application.service import MultiService
 from twisted.web.http_headers import Headers
+from daemon import DaemonContext
+from setproctitle import setproctitle
 
 from mandelbrot.plugin import PluginManager
 from mandelbrot.agent.inventory import InventoryDatabase
@@ -26,7 +27,7 @@ from mandelbrot.agent.probes import ProbeScheduler
 from mandelbrot.agent.endpoints import EndpointWriter
 from mandelbrot.http import http, as_json
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
-from mandelbrot import versionstring
+from mandelbrot import defaults, versionstring
 
 logger = getLogger('mandelbrot.agent.agent')
 
@@ -46,6 +47,9 @@ class Agent(MultiService):
         # load the inventory
         self.inventory = InventoryDatabase(self.plugins)
         self.inventory.configure(ns)
+        # get agent process configuration
+        self.foreground = section.get_bool("foreground", False)
+        self.pidfile = section.get_path("pid file", None)
         # get supervisor configuration
         self.supervisor = section.get_str("supervisor url")
         # create the internal agent queue
@@ -98,11 +102,33 @@ class Agent(MultiService):
 
     def run(self):
         logger.info("-- starting mandelbrot agent --")
+        # execute any privileged subsystem code
         self.privilegedStartService()
-        self.startService()
-        reactor.run()
-        logger.info("-- stopping mandelbrot agent --")
-        self.stopService()
+        # set the process title
+        setproctitle("mandelbrot-agent [%s]" % self.inventory.root.get_id())
+        # construct the daemon context
+        daemon = DaemonContext()
+        daemon.prevent_core = True
+        daemon.chroot_directory = None
+        daemon.working_directory = "/"
+        daemon.pidfile = self.pidfile
+        #daemon.uid = None
+        #daemon.gid = None
+        # FIXME: hack to ensure that fds stay open when passed to daemon context
+        daemon.files_preserve = [x for x in xrange(64)]
+        if self.foreground:
+            daemon.detach_process = False
+            daemon.stdin = sys.stdin
+            daemon.stdout = sys.stdout
+            daemon.stderr = sys.stderr
+        else:
+            daemon.detach_process = True
+        with daemon:
+            from twisted.internet import reactor
+            self.startService()
+            reactor.run()
+            logger.info("-- stopping mandelbrot agent --")
+            self.stopService()
         logger.info("-- stopped mandelbrot agent --")
         return 0
 

@@ -17,7 +17,6 @@
 
 import json
 from zope.interface import implements
-from twisted.web.client import Agent, ProxyAgent, HTTPConnectionPool, readBody
 from twisted.internet.defer import succeed
 from twisted.web.iweb import IBodyProducer
 from mandelbrot.loggers import getLogger
@@ -57,19 +56,30 @@ class Http(object):
     """
     """
     def __init__(self):
+        self._pool = None
+
+    @property
+    def pool(self):
+        from twisted.web.client import HTTPConnectionPool
+        if self._pool is None:
+            self._pool = HTTPConnectionPool(self.reactor)
+        return self._pool
+
+    @property
+    def reactor(self):
         from twisted.internet import reactor
-        self.pool = HTTPConnectionPool(reactor)
-        logger.debug("created HTTP connection pool")
+        return reactor
 
     def agent(self, bind=None, timeout=None):
-        from twisted.internet import reactor
-        return Agent(reactor, pool=self.pool, bindAddress=bind, connectTimeout=timeout)
+        from twisted.web.client import Agent
+        return Agent(self.reactor, pool=self.pool, bindAddress=bind, connectTimeout=timeout)
 
     def proxy(self, endpoint):
-        from twisted.internet import reactor
-        return ProxyAgent(endpoint, reactor, self.pool)
+        from twisted.web.client import ProxyAgent
+        return ProxyAgent(endpoint, self.reactor, self.pool)
 
     def read_body(self, response):
+        from twisted.web.client import readBody
         return readBody(response)
 
 http = Http()

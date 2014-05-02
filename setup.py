@@ -46,6 +46,7 @@ setup(
         'mandelbrot',
         'mandelbrot.agent',
         'mandelbrot.client',
+        'mandelbrot.defaults',
         'mandelbrot.endpoints',
         'mandelbrot.probes',
         'mandelbrot.systems',
