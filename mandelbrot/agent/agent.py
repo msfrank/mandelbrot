@@ -19,6 +19,7 @@ import sys, Queue, urlparse, pprint
 from twisted.application.service import MultiService
 from twisted.web.http_headers import Headers
 from daemon import DaemonContext
+from daemon.pidfile import TimeoutPIDLockFile
 from setproctitle import setproctitle
 
 from mandelbrot.plugin import PluginManager
@@ -111,7 +112,8 @@ class Agent(MultiService):
         daemon.prevent_core = True
         daemon.chroot_directory = None
         daemon.working_directory = "/"
-        daemon.pidfile = self.pidfile
+        if self.pidfile is not None:
+            daemon.pidfile = TimeoutPIDLockFile(self.pidfile)
         #daemon.uid = None
         #daemon.gid = None
         # FIXME: hack to ensure that fds stay open when passed to daemon context
