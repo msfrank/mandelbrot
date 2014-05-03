@@ -37,7 +37,7 @@ renderers = {
 def status_callback(ns):
     # client settings
     section = ns.get_section('client')
-    server = section.get_str('host')
+    server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
     debug = section.get_bool("debug", False)
     # client:status settings
     section = ns.get_section('client:status')

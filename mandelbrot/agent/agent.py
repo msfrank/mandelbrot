@@ -53,7 +53,7 @@ class Agent(MultiService):
         self.foreground = section.get_bool("foreground", False)
         self.pidfile = section.get_path("pid file", None)
         # get supervisor configuration
-        self.supervisor = section.get_str("supervisor url")
+        self.supervisor = section.get_str("supervisor url", ns.get_section('supervisor').get_str('supervisor url'))
         # create the internal agent queue
         queuesize = section.get_int("agent queue size", 4096)
         self.queue = Queue.Queue(maxsize=queuesize)

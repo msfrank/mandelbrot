@@ -38,7 +38,7 @@ def main():
           confbase=os.path.join(defaults.SYSCONF_DIR, "mandelbrot"),
           section="client",
           options=[
-            Option("H", "host", override="host", help="Connect to mandelbrot server HOST", metavar="HOST"),
+            Option("H", "host", override="supervisor url", help="Connect to mandelbrot server HOST", metavar="HOST"),
             Option("u", "username", override="username", help="Authenticate with username USER", metavar="USER"),
             Option("p", "password", override="password", help="Authenticate with password PASS", metavar="PASS"),
             Switch("P", "prompt-password", override="prompt password", help="Prompt for a password"),

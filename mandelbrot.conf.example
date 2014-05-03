@@ -1,9 +1,16 @@
-[agent]
+[supervisor]
 supervisor url = http://localhost:8080
-use srv records = true
 ssl client certificate file = /etc/pki/tls/certs/mandelbrot-client.crt
 ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt 
-local spool directory = /var/spool/mandelbrot
+use srv records = true
+
+[agent]
+db directory = /var/lib/mandelbrot
+spool directory = /var/spool/mandelbrot
+run directory = /var/run
+
+[client]
+
 
 [system]
 system type = io.mandelbrot.system.GenericHost
