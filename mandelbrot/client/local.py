@@ -17,7 +17,6 @@
 
 import time
 from twisted.internet import reactor
-from twisted.web.xmlrpc import Proxy
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.table import sort_results, render_table
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
@@ -81,64 +80,6 @@ def disable_callback(ns):
 def enable_callback(ns):
     pass
 
-def agent_uri_callback(ns):
-    section = ns.get_section('client')
-    url = 'http://localhost:9844/XMLRPC'
-    if section.get_bool("debug", False):
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
-    logger.debug("connecting to %s", url)
-    proxy = Proxy(url)
-    defer = proxy.callRemote('getUri')
-    def onfailure(failure):
-        print "query failed: " + failure.getErrorMessage()
-        reactor.stop()
-    def onresponse(uri):
-        print uri
-        reactor.stop()
-    defer.addCallbacks(onresponse, onfailure)
-    reactor.run()
-
-def agent_uptime_callback(ns):
-    section = ns.get_section('client')
-    url = 'http://localhost:9844/XMLRPC'
-    if section.get_bool("debug", False):
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
-    logger.debug("connecting to %s", url)
-    proxy = Proxy(url)
-    defer = proxy.callRemote('getUptime')
-    def onfailure(failure):
-        print "query failed: " + failure.getErrorMessage()
-        reactor.stop()
-    def onresponse(uptime):
-        started = time.time() - uptime
-        print "mandelbrot-agent running since " + time.ctime(started)
-        reactor.stop()
-    defer.addCallbacks(onresponse, onfailure)
-    reactor.run()
-
-def agent_version_callback(ns):
-    section = ns.get_section('client')
-    url = 'http://localhost:9844/XMLRPC'
-    if section.get_bool("debug", False):
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
-    logger.debug("connecting to %s", url)
-    proxy = Proxy(url)
-    defer = proxy.callRemote('getVersion')
-    def onfailure(failure):
-        print "query failed: " + failure.getErrorMessage()
-        reactor.stop()
-    def onresponse(version):
-        print "mandelbrot-agent version " + version
-        reactor.stop()
-    defer.addCallbacks(onresponse, onfailure)
-    reactor.run()
-
 
 from pesky.settings.action import Action, NOACTION
 from pesky.settings.option import Option, Switch
@@ -178,25 +119,3 @@ local_actions = [
       options=[],
       callback=enable_callback),
     ]
-
-agent_actions = Action("agent",
-                  usage="COMMAND",
-                  description="Interact with the local agent process",
-                  callback=NOACTION,
-                  actions=[
-                    Action("uri",
-                      usage="[OPTIONS]",
-                      description="display the local agent process system URI",
-                      options=[],
-                      callback=agent_uri_callback),
-                    Action("uptime",
-                      usage="[OPTIONS]",
-                      description="display the local agent process uptime",
-                      options=[],
-                      callback=agent_uptime_callback),
-                    Action("version",
-                      usage="[OPTIONS]",
-                      description="display the local agent process version",
-                      options=[],
-                      callback=agent_version_callback),
-                  ])

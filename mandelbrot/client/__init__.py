@@ -20,7 +20,8 @@ from pesky.settings.action import ActionMap, Action
 from pesky.settings.option import Option, LongOption, Switch
 from pesky.settings.errors import ConfigureError
 
-from mandelbrot.client.local import local_actions, agent_actions
+from mandelbrot.client.agent import agent_actions
+from mandelbrot.client.local import local_actions
 from mandelbrot.client.system import system_actions
 from mandelbrot.loggers import getLogger
 from mandelbrot import versionstring
@@ -43,10 +44,7 @@ def main():
             Switch("P", "prompt-password", override="prompt password", help="Prompt for a password"),
             LongOption("log-config", override="log config file", help="use logging configuration file FILE", metavar="FILE"),
             Switch("d", "debug", override="debug", help="Print debugging information")],
-          actions= local_actions + [
-            agent_actions,
-            system_actions,
-            ]
+          actions = local_actions + [ agent_actions, system_actions ]
         )
         return actions.parse()
     except ConfigureError, e:
