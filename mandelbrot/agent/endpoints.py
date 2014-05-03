@@ -59,9 +59,10 @@ class EndpointWriter(MultiService):
         self.consumer.start()
 
     def stopService(self):
-        logger.debug("stopping message consumer thread")
-        self.deque.put(MessageConsumer.TERMINATE)
-        self.consumer.join()
+        if self.consumer is not None:
+            logger.debug("stopping message consumer thread")
+            self.deque.put(MessageConsumer.TERMINATE)
+            self.consumer.join()
         self.consumer = None
         logger.debug("stopped endpoint writer")
 
