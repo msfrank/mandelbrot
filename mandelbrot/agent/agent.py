@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys, Queue, urlparse, pprint
+import os, sys, Queue, urlparse, pprint
 from twisted.application.service import MultiService
 from twisted.web.http_headers import Headers
 from daemon import DaemonContext
@@ -23,6 +23,7 @@ from daemon.pidfile import TimeoutPIDLockFile
 from setproctitle import setproctitle
 
 from mandelbrot.plugin import PluginManager
+from mandelbrot.agent.state import StateDatabase
 from mandelbrot.agent.inventory import InventoryDatabase
 from mandelbrot.agent.probes import ProbeScheduler
 from mandelbrot.agent.endpoints import EndpointWriter
@@ -46,8 +47,11 @@ class Agent(MultiService):
         section = ns.get_section("agent")
         self.plugins = PluginManager()
         self.plugins.configure(section)
+        # configure the state db
+        path = section.get_path("state directory", os.path.join(defaults.LOCALSTATE_DIR, "mandelbrot"))
+        self.state = StateDatabase(path)
         # load the inventory
-        self.inventory = InventoryDatabase(self.plugins)
+        self.inventory = InventoryDatabase(self.plugins, self.state)
         self.inventory.configure(ns)
         # get agent process configuration
         self.foreground = section.get_bool("foreground", False)
@@ -78,25 +82,34 @@ class Agent(MultiService):
             startLogging(None)
 
     def startService(self):
-        registration = {'uri': self.inventory.root.get_id(), 'registration': self.inventory.spec} 
-        url = urlparse.urljoin(self.supervisor, 'objects/systems')
-        logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
         self.agent = http.agent()
         headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
-        logger.debug("POST %s\n%s", url, pprint.pformat(registration))
-        defer = self.agent.request('POST', url, headers, as_json(registration))
-        defer.addCallbacks(self.onresponse, self.onfailure)
+        registration = {'uri': self.inventory.uri, 'registration': self.inventory.spec} 
+        if self.inventory.uri == self.state.get('uri'):
+            url = urlparse.urljoin(self.supervisor, 'objects/systems/' + self.inventory.uri)
+            logger.debug("PUT %s\n%s", url, pprint.pformat(registration))
+            defer = self.agent.request('PUT', url, headers, as_json(registration))
+        else:
+            url = urlparse.urljoin(self.supervisor, 'objects/systems')
+            logger.debug("POST %s\n%s", url, pprint.pformat(registration))
+            defer = self.agent.request('POST', url, headers, as_json(registration))
+        defer.addCallbacks(self.on_response, self.on_failure)
+        logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
 
-    def onresponse(self, response):
+    def on_response(self, response):
         logger.debug("registration returned %i %s", response.code, response.phrase)
         defer = http.read_body(response)
-        defer.addCallbacks(self.onregistration, self.onfailure)
+        defer.addCallbacks(self.on_registration, self.on_failure)
 
-    def onregistration(self, registration):
+    def on_registration(self, registration):
+        logger.debug("on_registration: %s", registration)
+        self.state.put('uri', self.inventory.uri)
         MultiService.startService(self)
 
-    def onfailure(self, failure):
-        logger.debug("registration failed: %s", failure.getErrorMessage())
+    def on_failure(self, failure):
+        logger.error("registration failed: %s", failure.getErrorMessage())
+        from twisted.internet import reactor
+        reactor.stop()
 
     def run(self):
         logger.info("-- starting mandelbrot agent --")

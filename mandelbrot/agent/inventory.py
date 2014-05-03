@@ -26,17 +26,12 @@ class InventoryDatabase(object):
     Manages inventory objects as a tree, with the system as the root, 
     and probes forming branches and leaves.
     """
-    def __init__(self, plugins):
+    def __init__(self, plugins, state):
         self.plugins = plugins
+        self.state = state
         self.root = None
-        self.db = None
 
     def configure(self, ns):
-        # initialize the inventory database
-        section = ns.get_section('agent')
-        path = section.get_path("inventory directory", None)
-        if path is not None:
-            self.db = DirDBM(path)
         # initialize the root
         section = ns.get_section('system')
         roottype = section.get_str('system type')

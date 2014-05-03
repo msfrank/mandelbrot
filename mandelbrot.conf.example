@@ -5,9 +5,9 @@ ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt
 use srv records = true
 
 [agent]
-db directory = /var/lib/mandelbrot
-spool directory = /var/spool/mandelbrot
-run directory = /var/run
+state directory = state/
+spool directory = spool/
+run directory = run/
 
 [client]
 
