@@ -109,8 +109,11 @@ def parse_proberef(string):
         except:
             raise Exception("invalid proberef %s: uri part is malformed" % string)
     # parse each segment in path
+    segments = segments[1:]
+    if len(segments) == 1 and segments[0] == '':
+        return ProbeRef(uri, [])
     path = list()
-    for segment in segments[1:]:
+    for segment in segments:
         segment = segment.strip()
         if segment == '':
             raise Exception("invalid proberef %s: empty path segment is not allowed" % string)

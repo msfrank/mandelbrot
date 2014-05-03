@@ -18,6 +18,8 @@
 import collections, time
 from tabulate import tabulate
 
+from mandelbrot.ref import parse_proberef
+
 def sort_results(results, sortfields, converters=None):
     """
     """
@@ -116,6 +118,7 @@ def bool2string(value):
 
 def proberef2path(value):
     try:
-        return parse_proberef(value).path
+        ref = parse_proberef(value)
+        return ref.path
     except:
         return ""

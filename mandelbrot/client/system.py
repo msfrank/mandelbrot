@@ -41,6 +41,7 @@ def system_status_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    debug = section.get_bool("debug", False)
     # client:system:history settings
     section = ns.get_section('client:system:status')
     fields = ('probeRef','lifecycle','health','summary','timestamp','lastChange','lastUpdate','squelched')
@@ -48,7 +49,7 @@ def system_status_callback(ns):
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
     (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI',))
-    if section.get_bool("debug", False):
+    if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
@@ -78,6 +79,7 @@ def system_history_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    debug = section.get_bool("debug", False)
     # client:system:history settings
     section = ns.get_section('client:system:history')
     timerange = section.get_str('history timerange')
@@ -87,7 +89,7 @@ def system_history_callback(ns):
     sort = section.get_list('history sort', ['timestamp'])
     tablefmt = section.get_str('history table format', 'simple')
     (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
-    if section.get_bool("debug", False):
+    if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
@@ -127,6 +129,7 @@ def system_notifications_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    debug = section.get_bool("debug", False)
     # client:system:notifications settings
     section = ns.get_section('client:system:notifications')
     timerange = section.get_str('notifications timerange')
@@ -136,7 +139,7 @@ def system_notifications_callback(ns):
     sort = section.get_list('notifications sort', ['timestamp'])
     tablefmt = section.get_str('notifications table format', 'simple')
     (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
-    if section.get_bool("debug", False):
+    if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)

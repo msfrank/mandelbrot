@@ -16,7 +16,9 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+from urlparse import urljoin
 from twisted.internet import reactor
+from twisted.web.xmlrpc import Proxy
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.table import sort_results, render_table
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
@@ -36,37 +38,46 @@ def status_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('host')
+    debug = section.get_bool("debug", False)
     # client:status settings
     section = ns.get_section('client:status')
     fields = ('probeRef','lifecycle','health','summary','timestamp','lastChange','lastUpdate','squelched')
     fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
-    refs = map(parse_proberef, ns.get_args())
-    if section.get_bool("debug", False):
+    refs = ns.get_args()
+    if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
-    url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status')
-    logger.debug("connecting to %s", url)
-    defer = http.agent(timeout=3).request('GET', url)
-    def onbody(body, code):
-        logger.debug("received body %s", body)
-        if code == 200:
-            status = sort_results(from_json(body), sort)
-            print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
-        else:
-            print "error: " + from_json(body)['description']
+    # 
+    agent_url = 'http://localhost:9844/XMLRPC'
+    proxy = Proxy(agent_url)
+    defer = proxy.callRemote('getUri')
+    def on_uri(system):
+        url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status')
+        logger.debug("connecting to %s", url)
+        defer = http.agent(timeout=3).request('GET', url)
+        def on_body(body, code):
+            logger.debug("received body %s", body)
+            if code == 200:
+                status = sort_results(from_json(body), sort)
+                print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+            else:
+                print "error: " + from_json(body)['description']
+            reactor.stop()
+        def on_failure(failure):
+            logger.debug("query failed: %s", failure.getErrorMessage())
+            reactor.stop()
+        def on_response(response):
+            logger.debug("received response %i %s", response.code, response.phrase)
+            http.read_body(response).addCallbacks(on_body, on_failure, callbackArgs=(response.code,))
+        defer.addCallbacks(on_response, on_failure)
+    def on_failure(failure):
+        print "failed to discover agent system uri: " + failure.getErrorMessage()
         reactor.stop()
-    def onfailure(failure):
-        logger.debug("query failed: %s", failure.getErrorMessage())
-        reactor.stop()
-    def onresponse(response):
-        logger.debug("received response %i %s", response.code, response.phrase)
-        http.read_body(response).addCallbacks(onbody, onfailure, callbackArgs=(response.code,))
-    defer.addCallbacks(onresponse, onfailure)
+    defer.addCallbacks(on_uri, on_failure)
     reactor.run()
-
 
 def acknowledge_callback(ns):
     pass
@@ -86,7 +97,7 @@ from pesky.settings.option import Option, Switch
 
 local_actions = [
     Action("status",
-      usage="[OPTIONS] [PATH..]",
+      usage="[OPTIONS] [PATH...]",
       description="get the current status of local PATH",
       options=[
         Option('f', 'fields', 'status fields', help="display only the specified FIELDS", metavar="FIELDS"),
