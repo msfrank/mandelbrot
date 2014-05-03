@@ -81,9 +81,27 @@ def disable_callback(ns):
 def enable_callback(ns):
     pass
 
+def agent_uri_callback(ns):
+    section = ns.get_section('client')
+    url = 'http://localhost:9844/XMLRPC'
+    if section.get_bool("debug", False):
+        startLogging(StdoutHandler(), DEBUG)
+    else:
+        startLogging(None)
+    logger.debug("connecting to %s", url)
+    proxy = Proxy(url)
+    defer = proxy.callRemote('getUri')
+    def onfailure(failure):
+        print "query failed: " + failure.getErrorMessage()
+        reactor.stop()
+    def onresponse(uri):
+        print uri
+        reactor.stop()
+    defer.addCallbacks(onresponse, onfailure)
+    reactor.run()
+
 def agent_uptime_callback(ns):
     section = ns.get_section('client')
-    server = section.get_str('host')
     url = 'http://localhost:9844/XMLRPC'
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
@@ -104,7 +122,6 @@ def agent_uptime_callback(ns):
 
 def agent_version_callback(ns):
     section = ns.get_section('client')
-    server = section.get_str('host')
     url = 'http://localhost:9844/XMLRPC'
     if section.get_bool("debug", False):
         startLogging(StdoutHandler(), DEBUG)
@@ -167,6 +184,11 @@ agent_actions = Action("agent",
                   description="Interact with the local agent process",
                   callback=NOACTION,
                   actions=[
+                    Action("uri",
+                      usage="[OPTIONS]",
+                      description="display the local agent process system URI",
+                      options=[],
+                      callback=agent_uri_callback),
                     Action("uptime",
                       usage="[OPTIONS]",
                       description="display the local agent process uptime",

@@ -103,5 +103,5 @@ class InventoryDatabase(object):
         return makespec(self.root)
 
     @property
-    def system(self):
+    def uri(self):
         return self.root.get_id()

@@ -38,7 +38,7 @@ class XMLRPCService(Service):
 
     def configure(self, ns):
         section = ns.get_section('agent')
-        self.interface = section.get_str("xmlrpc tcp interface", '')
+        self.interface = section.get_str("xmlrpc tcp interface", 'localhost')
         self.port = section.get_int("xmlrpc tcp port", 9844)
         self.backlog = section.get_int("xmlrpc tcp backlog", 10)
         self.api.configure(ns)
@@ -79,5 +79,5 @@ class API(XMLRPC):
         return self.agent.inventory.spec
 
     @withRequest
-    def xmlrpc_getSystem(self, request):
-        return self.agent.inventory.system
+    def xmlrpc_getUri(self, request):
+        return self.agent.inventory.uri
