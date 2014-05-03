@@ -67,3 +67,71 @@ class SystemMemory(Probe):
         swaptotal = swap.total
         summary = "%.1f%% used of %i bytes of physical memory; %.1f%% used of %i bytes of swap" % (memused,memtotal,swapused,swaptotal)
         return Evaluation(Health.HEALTHY, summary)
+
+class SystemDiskUsage(Probe):
+    """
+    """
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemDiskUsage"
+
+    def configure(self, section):
+        self.partition = section.get_path("disk partition", "/")
+        Probe.configure(self, section)
+
+    def probe(self):
+        disk = psutil.disk_usage(self.partition)
+        diskused = disk.percent
+        disktotal = disk.total
+        summary = "%.1f%% used of %i bytes on %s" % (diskused,disktotal,self.partition)
+        return Evaluation(Health.HEALTHY, summary)
+
+class SystemDiskPerformance(Probe):
+    """
+    """
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemDiskPerformance"
+
+    def configure(self, section):
+        self.device = section.get_path("disk device", None)
+        Probe.configure(self, section)
+
+    def probe(self):
+        if self.device is not None:
+            disk = psutil.disk_io_counters(perdisk=True)[self.device]
+        else:
+            disk = psutil.disk_io_counters(perdisk=False)
+        reads = disk.read_count
+        writes = disk.write_count
+        if self.device is not None:
+            summary = "%i reads, %i writes on %s" % (reads,writes,self.device)
+        else:
+            summary = "%i reads, %i writes across all devices" % (reads,writes)
+        return Evaluation(Health.HEALTHY, summary)
+
+class SystemNetPerformance(Probe):
+    """
+    """
+    def get_type(self):
+        return "io.mandelbrot.probe.SystemNetPerformance"
+
+    def configure(self, section):
+        self.device = section.get_path("net device", None)
+        Probe.configure(self, section)
+
+    def probe(self):
+        if self.device is not None:
+            net = psutil.net_io_counters(pernic=True)[self.device]
+        else:
+            net = psutil.net_io_counters(pernic=False)
+        tx = net.packets_sent
+        rx = net.packets_recv
+        errin = net.errin
+        errout = net.errout
+        dropin = net.dropin
+        dropout = net.dropout
+        if self.device is not None:
+            summary = "%i packets sent, %i packets received on %s" % (tx,rx,self.device)
+        else:
+            summary = "%i packets sent, %i packets received across all devices" % (tx,rx)
+        return Evaluation(Health.HEALTHY, summary)
+

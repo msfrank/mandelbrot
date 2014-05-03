@@ -24,7 +24,11 @@ probe type = io.mandelbrot.probe.SystemCPU
 [probe:/memory]
 probe type = io.mandelbrot.probe.SystemMemory
 
-[endpoints]
+[probe:/disk]
+probe type = io.mandelbrot.probe.SystemDiskUsage
+
+[probe:/net]
+probe type = io.mandelbrot.probe.SystemNetPerformance
 
 #[endpoint:dummy]
 #accepts = [ io.mandelbrot.* ]

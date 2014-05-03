@@ -64,6 +64,9 @@ setup(
             'io.mandelbrot.probe.SystemLoad=mandelbrot.probes.system:SystemLoad',
             'io.mandelbrot.probe.SystemCPU=mandelbrot.probes.system:SystemCPU',
             'io.mandelbrot.probe.SystemMemory=mandelbrot.probes.system:SystemMemory',
+            'io.mandelbrot.probe.SystemDiskUsage=mandelbrot.probes.system:SystemDiskUsage',
+            'io.mandelbrot.probe.SystemDiskPerformance=mandelbrot.probes.system:SystemDiskPerformance',
+            'io.mandelbrot.probe.SystemNetPerformance=mandelbrot.probes.system:SystemNetPerformance',
             ],
         'io.mandelbrot.system': [
             'io.mandelbrot.system.GenericHost=mandelbrot.systems.generic:GenericHost',
