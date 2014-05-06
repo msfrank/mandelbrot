@@ -15,28 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import pkg_resources, json
 
-# load system defaults
-try:
-    from mandelbrot.defaults.system import system_defaults
-    for name,value in system_defaults().items():
-        setattr(sys.modules['mandelbrot.defaults'], name, value)
-except Exception, e:
-    pass
-
-# load site overrides
-try:
-    from mandelbrot.defaults.site import site_defaults
-    for name,value in site_defaults().items():
-        setattr(sys.modules['mandelbrot.defaults'], name, value)
-except Exception, e:
-    pass
-
-# load package overrides
-try:
-    from mandelbrot.defaults.package import package_defaults
-    for name,value in package_defaults().items():
-        setattr(sys.modules['mandelbrot.defaults'], name, value)
-except Exception, e:
-    pass
+def package_defaults():
+    req = pkg_resources.Requirement.parse("mandelbrot")
+    provider = pkg_resources.get_provider(req)
+    if provider.has_metadata('mandelbrot_defaults.txt'):
+        values = json.loads(provider.get_metadata('mandelbrot_defaults.txt'))
+        print values
+        return values
+    return dict()

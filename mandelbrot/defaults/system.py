@@ -17,7 +17,7 @@
 
 import platform
 
-def defaults():
+def site_defaults():
     system = platform.system().lower()
     if system == 'linux':
         return {

@@ -3,3 +3,4 @@
 *.iml
 *.pyc
 *.egg-info
+mandelbrot.conf
