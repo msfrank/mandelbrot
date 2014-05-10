@@ -19,7 +19,8 @@ import os, sys, traceback
 from pesky.settings import Settings, ConfigureError
 from mandelbrot.agent.agent import Agent
 from mandelbrot.loggers import getLogger
-from mandelbrot import defaults, versionstring
+from mandelbrot.defaults import defaults
+from mandelbrot import versionstring
 
 logger = getLogger('mandelbrot.agent')
 
@@ -29,7 +30,7 @@ def main():
         version=versionstring(),
         description="Mandelbrot agent",
         appname="mandelbrot-agent",
-        confbase=os.path.join(defaults.SYSCONF_DIR, "mandelbrot"),
+        confbase=os.path.abspath(defaults["SYSCONF_DIR"]),
         section="agent")
     try:
         settings.add_switch("f", "foreground",

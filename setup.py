@@ -15,11 +15,16 @@ setup(
     description="Mandelbrot distributed monitoring agent and client utilities",
     author="Michael Frank",
     author_email="msfrank@syntaxockey.com",
+    # for defaults setup options
+    setup_requires=[
+        'pesky-defaults >= 0.0.1',
+        ],
     # installation dependencies
     install_requires=[
         'zope.interface',
         'twisted >= 13.2.0',
         'pesky-settings >= 0.0.1',
+        'pesky-defaults >= 0.0.1',
         'psutil >= 2.1.0',
         'tabulate >= 0.7.2',
         'setproctitle >= 1.1.8',
@@ -46,7 +51,6 @@ setup(
         'mandelbrot',
         'mandelbrot.agent',
         'mandelbrot.client',
-        'mandelbrot.defaults',
         'mandelbrot.endpoints',
         'mandelbrot.probes',
         'mandelbrot.systems',

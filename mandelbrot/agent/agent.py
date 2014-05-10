@@ -30,7 +30,8 @@ from mandelbrot.agent.endpoints import EndpointWriter
 from mandelbrot.agent.xmlrpc import XMLRPCService
 from mandelbrot.http import http, as_json
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
-from mandelbrot import defaults, versionstring
+from mandelbrot.defaults import defaults
+from mandelbrot import versionstring
 
 logger = getLogger('mandelbrot.agent.agent')
 
@@ -48,7 +49,7 @@ class Agent(MultiService):
         self.plugins = PluginManager()
         self.plugins.configure(section)
         # configure the state db
-        path = section.get_path("state directory", os.path.join(defaults.LOCALSTATE_DIR, "mandelbrot"))
+        path = section.get_path("state directory", os.path.join(defaults["LOCALSTATE_DIR"], "mandelbrot"))
         self.state = StateDatabase(path)
         # load the inventory
         self.inventory = InventoryDatabase(self.plugins, self.state)

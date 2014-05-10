@@ -22,7 +22,7 @@ from twisted.application.service import Service
 from twisted.web.xmlrpc import XMLRPC, withRequest
 from twisted.web.server import Site
 from mandelbrot.loggers import getLogger
-from mandelbrot import defaults, versionstring
+from mandelbrot import versionstring
 
 logger = getLogger('mandelbrot.agent.xmlrpc')
 

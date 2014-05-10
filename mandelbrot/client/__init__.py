@@ -24,7 +24,8 @@ from mandelbrot.client.agent import agent_actions
 from mandelbrot.client.local import local_actions
 from mandelbrot.client.system import system_actions
 from mandelbrot.loggers import getLogger
-from mandelbrot import defaults, versionstring
+from mandelbrot.defaults import defaults
+from mandelbrot import versionstring
 
 logger = getLogger('mandelbrot.client')
 
@@ -35,7 +36,7 @@ def main():
           version=versionstring(),
           description="Mandelbrot client commands",
           appname="mandelbrot",
-          confbase=os.path.join(defaults.SYSCONF_DIR, "mandelbrot"),
+          confbase=os.path.abspath(defaults["SYSCONF_DIR"]),
           section="client",
           options=[
             Option("H", "host", override="supervisor url", help="Connect to mandelbrot server HOST", metavar="HOST"),
