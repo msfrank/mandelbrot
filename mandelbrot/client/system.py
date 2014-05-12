@@ -134,7 +134,7 @@ def system_notifications_callback(ns):
     section = ns.get_section('client:system:notifications')
     timerange = section.get_str('notifications timerange')
     limit = section.get_int('notifications limit')
-    fields = ('timestamp', 'probeRef', 'description', 'correlation')
+    fields = ('timestamp', 'probeRef', 'kind', 'description', 'correlation')
     fields = section.get_list('notifications fields', fields)
     sort = section.get_list('notifications sort', ['timestamp'])
     tablefmt = section.get_str('notifications table format', 'simple')
