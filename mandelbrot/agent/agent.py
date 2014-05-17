@@ -85,7 +85,7 @@ class Agent(MultiService):
     def startService(self):
         self.agent = http.agent()
         headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
-        registration = {'uri': self.inventory.uri, 'registration': self.inventory.spec} 
+        registration = {'uri': self.inventory.uri, 'registration': self.inventory.registration} 
         if self.inventory.uri == self.state.get('uri'):
             url = urlparse.urljoin(self.supervisor, 'objects/systems/' + self.inventory.uri)
             logger.debug("PUT %s\n%s", url, pprint.pformat(registration))

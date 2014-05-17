@@ -19,8 +19,15 @@ description = "this is a generic host description"
 tags = "server" "mandelbrot.io" "host" "generic"
 
 [probes]
-default probe interval = 30 seconds
+default probe interval = 60 seconds
 default probe splay = 5 seconds
+default joining timeout = 5 minutes
+default probe timeout = 5 minutes
+default alert timeout = 10 minutes
+default leaving timeout = 12 hours
+default flap window = 10 minutes
+default flap deviations = 5
+default notification policy = emit
 
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad
@@ -31,11 +38,11 @@ probe type = io.mandelbrot.probe.SystemCPU
 [probe:/memory]
 probe type = io.mandelbrot.probe.SystemMemory
 
-#[probe:/disk]
-#probe type = io.mandelbrot.probe.SystemDiskUsage
+[probe:/disk]
+probe type = io.mandelbrot.probe.SystemDiskUsage
 
-#[probe:/net]
-#probe type = io.mandelbrot.probe.SystemNetPerformance
+[probe:/net]
+probe type = io.mandelbrot.probe.SystemNetPerformance
 
 #[endpoint:dummy]
 #accepts = [ io.mandelbrot.* ]

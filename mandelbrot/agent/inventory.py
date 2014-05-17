@@ -89,13 +89,16 @@ class InventoryDatabase(object):
         return find_object(self.root, path[1:].split('/'))
 
     @property
-    def spec(self):
+    def registration(self):
         def makespec(obj):
             children = {}
             for name,child in obj.children.items():
                 children[name] = makespec(child)
-            return {'objectType': obj.get_type(), 'metaData': obj.get_metadata(), 'children': children}
-        return makespec(self.root)
+            return {'probeType': obj.get_type(), 'metadata': obj.get_metadata(), 'children': children}
+        probes = {}
+        for name,child in self.root.children.items():
+            probes[name] = makespec(child)
+        return {'systemType': self.root.get_type(), 'metadata': self.root.get_metadata(), 'probes': probes}
 
     @property
     def uri(self):
