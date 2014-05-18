@@ -35,6 +35,9 @@ class IProbe(Interface):
     def get_metadata(self):
         ""
 
+    def get_policy(self):
+        ""
+
     def probe(self):
         ""
 
@@ -45,14 +48,31 @@ class Probe(MBObject):
         MBObject.__init__(self)
         self._objectid = None
         self._objecttype = None
+        self._policy = None
         self.name = None
         self.description = None
         self.tags = None
+        self.joining_timeout = None
+        self.probe_timeout = None
+        self.alert_timeout = None
+        self.leaving_timeout = None
+        self.flap_window = None
+        self.flap_deviations = None
+        self.notification_policy = None
 
     def configure(self, section):
+        # metadata parameters
         self.name = section.get_str('display name')
         self.description = section.get_str('description')
         self.tags = section.get_list('tags')
+        # policy parameters
+        self.joining_timeout = section.get_timedelta("joining timeout")
+        self.probe_timeout = section.get_timedelta("probe timeout")
+        self.alert_timeout = section.get_timedelta("alert timeout")
+        self.leaving_timeout = section.get_timedelta("leaving timeout")
+        self.flap_window = section.get_timedelta("flap window")
+        self.flap_deviations = section.get_int("flap deviations")
+        self.notification_policy = section.get_str("notification policy")
 
     def set_id(self, objectid):
         if self._objectid is not None:
@@ -82,6 +102,28 @@ class Probe(MBObject):
     @property
     def metadata(self):
         return self.get_metadata()
+
+    def get_policy(self):
+        policy = {}
+        if self.joining_timeout is not None:
+            policy['joiningTimeout'] = self.joining_timeout
+        if self.probe_timeout is not None:
+            policy['probeTimeout'] = self.probe_timeout
+        if self.alert_timeout is not None:
+            policy['alertTimeout'] = self.alert_timeout
+        if self.leaving_timeout is not None:
+            policy['leavingTimeout'] = self.leaving_timeout
+        if self.flap_window is not None:
+            policy['flapWindow'] = self.flap_window
+        if self.flap_deviations is not None:
+            policy['flapDeviations'] = self.flap_deviations
+        if self.notification_policy is not None:
+            policy['notificationPolicy'] = self.notification_policy
+        return policy
+
+    @property
+    def policy(self):
+        return self.get_policy()
 
     def probe(self):
         raise NotImplementedError()

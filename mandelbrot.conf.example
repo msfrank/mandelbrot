@@ -19,15 +19,15 @@ description = "this is a generic host description"
 tags = "server" "mandelbrot.io" "host" "generic"
 
 [probes]
-default probe interval = 60 seconds
-default probe splay = 5 seconds
-default joining timeout = 5 minutes
-default probe timeout = 5 minutes
-default alert timeout = 10 minutes
-default leaving timeout = 12 hours
-default flap window = 10 minutes
-default flap deviations = 5
-default notification policy = emit
+probe interval = 60 seconds
+probe splay = 5 seconds
+joining timeout = 5 minutes
+probe timeout = 5 minutes
+alert timeout = 10 minutes
+leaving timeout = 12 hours
+flap window = 10 minutes
+flap deviations = 5
+notification policy = emit
 
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad

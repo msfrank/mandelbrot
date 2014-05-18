@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 from pesky.settings import ConfigureError
 from twisted.persisted.dirdbm import DirDBM
 from mandelbrot.loggers import getLogger
@@ -30,6 +31,13 @@ class InventoryDatabase(object):
         self.plugins = plugins
         self.state = state
         self.root = None
+        self.joining_timeout = None
+        self.probe_timeout = None
+        self.alert_timeout = None
+        self.leaving_timeout = None
+        self.flap_window = None
+        self.flap_deviations = None
+        self.notification_policy = None
 
     def configure(self, ns):
         # initialize the root
@@ -42,6 +50,15 @@ class InventoryDatabase(object):
             raise ConfigureError("failed to configure system: %s" % e)
         self.root.configure(section)
         logger.debug("configured system %s", self.root.get_id())
+        # configure default probe policy
+        section = ns.get_section('probes')
+        self.joining_timeout = section.get_timedelta("joining timeout", datetime.timedelta(minutes=10))
+        self.probe_timeout = section.get_timedelta("probe timeout", datetime.timedelta(minutes=10))
+        self.alert_timeout = section.get_timedelta("alert timeout", datetime.timedelta(minutes=10))
+        self.leaving_timeout = section.get_timedelta("leaving timeout", datetime.timedelta(days=1))
+        self.flap_window = section.get_timedelta("flap window", datetime.timedelta(minutes=125))
+        self.flap_deviations = section.get_int("flap deviations", 7)
+        self.notification_policy = section.get_str("notification policy", "emit")
         # initialize each probe specified in the configuration
         for section in sorted(ns.find_sections('probe:'), key=lambda k: k.name):
             try:
@@ -60,7 +77,7 @@ class InventoryDatabase(object):
                 if probetype is None:
                     raise Exception("no probe type found for %s" % probetype)
                 probe = self.plugins.newinstance('io.mandelbrot.probe', probetype)
-                probe.id = probename
+                probe.set_id(probename)
                 probe.configure(section)
                 # register probe as an inventory object
                 parent[probename] = probe
@@ -94,7 +111,22 @@ class InventoryDatabase(object):
             children = {}
             for name,child in obj.children.items():
                 children[name] = makespec(child)
-            return {'probeType': obj.get_type(), 'metadata': obj.get_metadata(), 'children': children}
+            policy = obj.get_policy()
+            if not 'joiningTimeout' in policy:
+                policy['joiningTimeout'] = self.joining_timeout
+            if not 'probeTimeout' in policy:
+                policy['probeTimeout'] = self.probe_timeout
+            if not 'alertTimeout' in policy:
+                policy['alertTimeout'] = self.alert_timeout
+            if not 'leavingTimeout' in policy:
+                policy['leavingTimeout'] = self.leaving_timeout
+            if not 'flapWindow' in policy:
+                policy['flapWindow'] = self.flap_window
+            if not 'flapDeviations' in policy:
+                policy['flapDeviations'] = self.flap_deviations
+            if not 'notificationPolicy' in policy:
+                policy['notificationPolicy'] = self.notification_policy
+            return {'probeType': obj.get_type(), 'metadata': obj.get_metadata(), 'policy': policy, 'children': children}
         probes = {}
         for name,child in self.root.children.items():
             probes[name] = makespec(child)

@@ -37,8 +37,8 @@ class ProbeScheduler(Service):
     def configure(self, ns):
         # configure generic probe parameters
         section = ns.get_section('probes')
-        defaultinterval = section.get_timedelta("default probe interval")
-        defaultsplay = section.get_timedelta("default probe splay")
+        defaultinterval = section.get_timedelta("probe interval", datetime.timedelta(seconds=300))
+        defaultsplay = section.get_timedelta("probe splay", datetime.timedelta(seconds=300))
         # initialize each probe specified in the configuration
         for section in ns.find_sections('probe:/'):
             probepath = section.name[6:]
