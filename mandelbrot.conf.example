@@ -5,6 +5,8 @@ ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt
 use srv records = true
 
 [agent]
+max registration attempts = 3
+registration attempt delay = 10 seconds
 state directory = state/
 spool directory = spool/
 run directory = run/
