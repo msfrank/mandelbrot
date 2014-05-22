@@ -91,34 +91,15 @@ class Agent(MultiService):
         self.agent = http.agent()
         headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
         registration = {'uri': self.inventory.uri, 'registration': self.inventory.registration} 
-        logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
-        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
-        # if we have previously stored uri as state, then use a PUT request
-        if self.inventory.uri == self.state.get('uri'):
-            method = 'PUT'
-            url = urlparse.urljoin(self.supervisor, 'objects/systems/' + self.inventory.uri)
-        # otherwise if this is a new registration, use a POST request
-        else:
-            method = 'POST'
-            url = urlparse.urljoin(self.supervisor, 'objects/systems')
         # callbacks
-        def on_retry(attempt):
+        def on_retry(method, url, attempt):
             logger.debug("%s %s", method, url)
             defer = self.agent.request(method, url, headers, as_json(registration))
-            defer.addBoth(on_response, attempt)
-        def retry(attempt, delay=None):
-            if self.maxattempts is None or attempt <= self.maxattempts:
-                if delay is not None:
-                    reactor.callLater(self.attemptwait, on_retry, attempt)
-                    logger.debug("retrying registration in %i seconds", delay)
-                else:
-                    on_retry(attempt)
-            else:
-                reactor.stop()
-        def on_response(response, attempt):
+            defer.addBoth(on_response, method, url, attempt)
+        def on_response(response, method, url, attempt):
             if isinstance(response, Failure):
                 logger.error("registration attempt %i failed: %s", attempt, response.getErrorMessage())
-                retry(attempt + 1, self.attemptwait)
+                register(method, url, attempt + 1, self.attemptwait)
             else:
                 logger.debug("registration attempt %i returned %i: %s", attempt, response.code, response.phrase)
                 # registration accepted
@@ -129,15 +110,32 @@ class Agent(MultiService):
                 elif response.code == 404:
                     method = 'POST'
                     url = urlparse.urljoin(self.supervisor, 'objects/systems')
-                    retry(attempt + 1)
+                    register(method, url, attempt + 1)
                 # conflicts with existing system
                 elif response.code == 409:
                     reactor.stop()
+        def register(method, url, attempt, delay=None):
+            if self.maxattempts is None or attempt <= self.maxattempts:
+                if delay is not None:
+                    reactor.callLater(self.attemptwait, on_retry, method, url, attempt)
+                    logger.debug("retrying registration in %i seconds", delay)
+                else:
+                    on_retry(method, url, attempt)
+            else:
+                reactor.stop()
+        # if we have previously stored uri as state, then use a PUT request
+        if self.inventory.uri == self.state.get('uri'):
+            logger.info("found cached system %s", self.state.get('uri'))
+            method = 'PUT'
+            url = urlparse.urljoin(self.supervisor, 'objects/systems/' + self.inventory.uri)
+        # otherwise if this is a new registration, use a POST request
+        else:
+            method = 'POST'
+            url = urlparse.urljoin(self.supervisor, 'objects/systems')
+        logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
+        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
         # start the first attempt
-        logger.debug("%s %s", method, url)
-        defer = self.agent.request(method, url, headers, as_json(registration))
-        defer.addBoth(on_response, 1)
-
+        register(method, url, 1)
 
     def run(self):
         logger.info("-- starting mandelbrot agent --")
