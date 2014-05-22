@@ -38,6 +38,7 @@ class InventoryDatabase(object):
         self.flap_window = None
         self.flap_deviations = None
         self.notification_policy = None
+        self.notifications = None
 
     def configure(self, ns):
         # initialize the root
@@ -58,7 +59,8 @@ class InventoryDatabase(object):
         self.leaving_timeout = section.get_timedelta("leaving timeout", datetime.timedelta(days=1))
         self.flap_window = section.get_timedelta("flap window", datetime.timedelta(minutes=125))
         self.flap_deviations = section.get_int("flap deviations", 7)
-        self.notification_policy = section.get_str("notification policy", "emit")
+        self.notification_behavior = section.get_str("notification behavior", "emit")
+        self.notifications = section.get_list("notifications", None)
         # initialize each probe specified in the configuration
         for section in sorted(ns.find_sections('probe:'), key=lambda k: k.name):
             try:
@@ -125,7 +127,11 @@ class InventoryDatabase(object):
             if not 'flapDeviations' in policy:
                 policy['flapDeviations'] = self.flap_deviations
             if not 'notificationPolicy' in policy:
-                policy['notificationPolicy'] = self.notification_policy
+                policy['notificationPolicy'] = dict()
+            if not 'behavior' in policy['notificationPolicy']:
+                policy['notificationPolicy']['behavior'] = self.notification_behavior
+            if not 'notifications' in policy['notificationPolicy'] and self.notifications is not None:
+                policy['notificationPolicy']['notifications'] = self.notifications
             return {'probeType': obj.get_type(), 'metadata': obj.get_metadata(), 'policy': policy, 'children': children}
         probes = {}
         for name,child in self.root.children.items():

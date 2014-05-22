@@ -72,7 +72,8 @@ class Probe(MBObject):
         self.leaving_timeout = section.get_timedelta("leaving timeout")
         self.flap_window = section.get_timedelta("flap window")
         self.flap_deviations = section.get_int("flap deviations")
-        self.notification_policy = section.get_str("notification policy")
+        self.notification_behavior = section.get_str("notification behavior")
+        self.notifications = section.get_list("notifications")
 
     def set_id(self, objectid):
         if self._objectid is not None:
@@ -117,8 +118,11 @@ class Probe(MBObject):
             policy['flapWindow'] = self.flap_window
         if self.flap_deviations is not None:
             policy['flapDeviations'] = self.flap_deviations
+        policy['notificationPolicy'] = dict()
         if self.notification_policy is not None:
-            policy['notificationPolicy'] = self.notification_policy
+            policy['notificationPolicy']['behavior'] = self.notification_behavior
+        if self.notifications is not None:
+            policy['notificationPolicy']['notifications'] = self.notifications
         return policy
 
     @property

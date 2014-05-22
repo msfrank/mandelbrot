@@ -24,12 +24,13 @@ tags = "server" "mandelbrot.io" "host" "generic"
 probe interval = 60 seconds
 probe splay = 5 seconds
 joining timeout = 5 minutes
-probe timeout = 5 minutes
-alert timeout = 10 minutes
+probe timeout = 1 minute
+alert timeout = 1 minute
 leaving timeout = 12 hours
 flap window = 10 minutes
 flap deviations = 5
-notification policy = emit
+notification behavior = emit
+notifications = lifecycle-changes health-alerts probe-acknowledged
 
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad
