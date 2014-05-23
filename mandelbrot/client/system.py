@@ -48,12 +48,14 @@ def system_status_callback(ns):
     fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
-    (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI',))
+    args = ns.get_args(parse_systemuri, minimum=1, names=('URI',))
+    system = args[0]
+    paths = urlencode(map(lambda arg: ('path', arg), args[1:]))
     if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
-    url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status')
+    url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body, code):
@@ -171,8 +173,8 @@ system_actions = Action("system",
                    callback=NOACTION,
                    actions=[
                      Action("status",
-                       usage="[OPTIONS] REF",
-                       description="get the current status of REF",
+                       usage="[OPTIONS] URI [PATH...]",
+                       description="get the current status of URI",
                        options=[
                          Option('f', 'fields', 'status fields', help="display only the specified FIELDS", metavar="FIELDS"),
                          Option('s', 'sort', 'status sort', help="sort results using the specified FIELDS", metavar="FIELDS"),
@@ -180,8 +182,8 @@ system_actions = Action("system",
                          ],
                        callback=system_status_callback),
                      Action("history",
-                       usage="[OPTIONS] REF...",
-                       description="get status history for REF",
+                       usage="[OPTIONS] URI [PATH...]",
+                       description="get status history for URI",
                        options=[
                          Option('t', 'range', 'history timerange', help="retrieve history within the specified TIMERANGE", metavar="TIMERANGE"),
                          Option('l', 'limit', 'history limit', help="return a maximum of LIMIT results", metavar="LIMIT"),
@@ -191,8 +193,8 @@ system_actions = Action("system",
                        ],
                        callback=system_history_callback),
                      Action("notifications",
-                       usage="[OPTIONS] REF",
-                       description="get notifications for REF",
+                       usage="[OPTIONS] URI [PATH...]",
+                       description="get notifications for URI",
                        options=[
                          Option('t', 'range', 'notifications timerange', help="retrieve notifications within the specified TIMERANGE", metavar="TIMERANGE"),
                          Option('l', 'limit', 'notifications limit', help="return a maximum of LIMIT results", metavar="LIMIT"),

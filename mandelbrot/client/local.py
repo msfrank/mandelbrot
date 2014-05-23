@@ -16,6 +16,7 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+from urllib import urlencode
 from urlparse import urljoin
 from twisted.internet import reactor
 from twisted.web.xmlrpc import Proxy
@@ -45,7 +46,7 @@ def status_callback(ns):
     fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
-    refs = ns.get_args()
+    paths = urlencode(map(lambda arg: ('path', arg), ns.get_args()))
     if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
@@ -55,7 +56,7 @@ def status_callback(ns):
     proxy = Proxy(agent_url)
     defer = proxy.callRemote('getUri')
     def on_uri(system):
-        url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status')
+        url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
         logger.debug("connecting to %s", url)
         defer = http.agent(timeout=3).request('GET', url)
         def on_body(body, code):
