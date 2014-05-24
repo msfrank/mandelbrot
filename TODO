@@ -1,6 +1,7 @@
 0.0.3
 -----
 * implement acknowledge command
+* implement metadata and policy query commands
 
 
 0.0.4

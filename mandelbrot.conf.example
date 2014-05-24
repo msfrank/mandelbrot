@@ -29,12 +29,11 @@ alert timeout = 1 minute
 leaving timeout = 12 hours
 flap window = 10 minutes
 flap deviations = 5
-notification behavior = emit
-notifications = lifecycle-changes health-alerts probe-acknowledged
+#notification behavior = emit
+#notifications = lifecycle-changes health-alerts probe-acknowledged
 
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad
-probe timeout = 5 minutes
 
 [probe:/cpu]
 probe type = io.mandelbrot.probe.SystemCPU
@@ -42,11 +41,11 @@ probe type = io.mandelbrot.probe.SystemCPU
 [probe:/memory]
 probe type = io.mandelbrot.probe.SystemMemory
 
-[probe:/disk]
-probe type = io.mandelbrot.probe.SystemDiskUsage
-
-[probe:/net]
-probe type = io.mandelbrot.probe.SystemNetPerformance
+#[probe:/disk]
+#probe type = io.mandelbrot.probe.SystemDiskUsage
+#
+#[probe:/net]
+#probe type = io.mandelbrot.probe.SystemNetPerformance
 
 #[endpoint:dummy]
 #accepts = [ io.mandelbrot.* ]

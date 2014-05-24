@@ -55,7 +55,9 @@ def system_status_callback(ns):
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
+    # build query url
     url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
+    # execute query
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
     def onbody(body, code):
@@ -90,13 +92,14 @@ def system_history_callback(ns):
     fields = section.get_list('history fields', fields)
     sort = section.get_list('history sort', ['timestamp'])
     tablefmt = section.get_str('history table format', 'simple')
-    (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
+    args = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
+    system = args[0]
+    params = map(lambda arg: ('path', arg), args[1:])
     if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
     # build query url
-    params = list()
     if timerange is not None:
         start,end = parse_timerange(timerange)
         if start is not None:
@@ -140,13 +143,24 @@ def system_notifications_callback(ns):
     fields = section.get_list('notifications fields', fields)
     sort = section.get_list('notifications sort', ['timestamp'])
     tablefmt = section.get_str('notifications table format', 'simple')
-    (system,) = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
+    args = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
+    system = args[0]
+    params = map(lambda arg: ('path', arg), args[1:])
     if debug:
         startLogging(StdoutHandler(), DEBUG)
     else:
         startLogging(None)
     # build query url
-    url = urljoin(server, 'objects/systems/' + str(system) + '/collections/notifications')
+    if timerange is not None:
+        start,end = parse_timerange(timerange)
+        if start is not None:
+            params.append(('from', calendar.timegm(start.utctimetuple())))
+        if end is not None:
+            params.append(('to', calendar.timegm(end.utctimetuple())))
+    if limit is not None:
+        params.append(('limit', limit))
+    qs = urlencode(params)
+    url = urljoin(server, 'objects/systems/' + str(system) + '/collections/notifications?' + qs)
     # execute query
     logger.debug("connecting to %s", url)
     defer = http.agent(timeout=3).request('GET', url)
