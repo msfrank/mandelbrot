@@ -62,7 +62,7 @@ def status_callback(ns):
         def on_body(body, code):
             logger.debug("received body %s", body)
             if code == 200:
-                status = sort_results(from_json(body), sort)
+                status = sort_results(from_json(body).values(), sort)
                 print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
             else:
                 print "error: " + from_json(body)['description']
