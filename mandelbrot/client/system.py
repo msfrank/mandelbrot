@@ -19,11 +19,15 @@ import collections, calendar
 from urllib import urlencode
 from urlparse import urlparse, urljoin
 from twisted.internet import reactor
-from mandelbrot.ref import parse_systemuri
+from twisted.web.http_headers import Headers
+
+from mandelbrot.client.action import action
+from mandelbrot.ref import parse_systemuri, parse_proberef
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.timerange import parse_timerange
 from mandelbrot.table import sort_results, render_table
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
+from mandelbrot import versionstring
 
 logger = getLogger('mandelbrot.client.system')
 
@@ -32,6 +36,7 @@ renderers = {
     'lastChange': millis2ctime,
     'lastUpdate': millis2ctime,
     'timestamp':  millis2ctime,
+    'acknowledged':  bool2checkbox,
     'squelched':  bool2checkbox,
 }
 
@@ -44,7 +49,7 @@ def system_status_callback(ns):
     debug = section.get_bool("debug", False)
     # client:system:history settings
     section = ns.get_section('client:system:status')
-    fields = ('probeRef','lifecycle','health','summary','timestamp','lastChange','lastUpdate','squelched')
+    fields = ('probeRef','lifecycle','health','acknowledged','summary','lastChange','lastUpdate','squelched')
     fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
@@ -177,6 +182,48 @@ def system_notifications_callback(ns):
         http.read_body(response).addCallbacks(onbody, onfailure)
     defer.addCallbacks(onresponse, onfailure)
     reactor.run()
+
+@action
+def system_acknowledge_callback(ns):
+    # client settings
+    section = ns.get_section('client')
+    server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
+    # client:acknowledge settings
+    section = ns.get_section('client:system:acknowledge')
+    args = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
+    system = args[0]
+    paths = urlencode(map(lambda arg: ('path', arg), args[1:]))
+    # get the status
+    try:
+        url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
+        logger.debug("connecting to %s", url)
+        response = yield http.agent(timeout=3).request('GET', url)
+        logger.debug("received response %i %s", response.code, response.phrase)
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code != 200:
+            print "server returned error: " + from_json(body)['description']
+        correlations = dict(map(lambda x: (x['probeRef'], x['correlation']),
+            filter(lambda x: 'correlation' in x and not 'acknowledgement' in x, from_json(body).values()
+            )))
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # acknowledge probes
+    try:
+        url = urljoin(server, 'objects/systems/' + str(system) + '/actions/acknowledge')
+        logger.debug("connecting to %s", url)
+        headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
+        body = {'uri': str(system), 'correlations': correlations}
+        response = yield http.agent(timeout=3).request('POST', url, headers, as_json(body))
+        logger.debug("received response %i %s", response.code, response.phrase)
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code != 200:
+            print "server returned error: " + from_json(body)['description']
+        acknowledgements = dict(map(lambda (ref,ack): (parse_proberef(ref), ack), from_json(body).items()))
+    except Exception, e:
+        print "command failed: " + str(e)
     
 from pesky.settings.action import Action, NOACTION
 from pesky.settings.option import *
@@ -217,5 +264,12 @@ system_actions = Action("system",
                          Option('T', 'table-format', 'table format', help="display result using the specified FMT", metavar="FMT")
                        ],
                        callback=system_notifications_callback),
-                   ]
+                     Action("acknowledge",
+                       usage="[OPTIONS] URI [PATH...]",
+                       description="acknowledge unhealthy PATHs for URI",
+                       options=[
+                         Option('m', 'message', 'message', help="append MESSAGE to the acknowledgement", metavar="MESSAGE"),
+                       ],
+                       callback=system_acknowledge_callback),
+                     ]
                  )

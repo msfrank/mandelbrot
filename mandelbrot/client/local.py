@@ -19,10 +19,14 @@ import time
 from urllib import urlencode
 from urlparse import urljoin
 from twisted.web.xmlrpc import Proxy
+from twisted.web.http_headers import Headers
+
 from mandelbrot.client.action import action
+from mandelbrot.ref import parse_proberef
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.table import sort_results, render_table
 from mandelbrot.loggers import getLogger
+from mandelbrot import versionstring
 
 logger = getLogger('mandelbrot.client.local')
 
@@ -32,6 +36,7 @@ renderers = {
     'lastChange': millis2ctime,
     'lastUpdate': millis2ctime,
     'timestamp':  millis2ctime,
+    'acknowledged': bool2checkbox,
     'squelched':  bool2checkbox,
 }
 
@@ -42,7 +47,7 @@ def status_callback(ns):
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
     # client:status settings
     section = ns.get_section('client:status')
-    fields = ('probeRef','lifecycle','health','summary','timestamp','lastChange','lastUpdate','squelched')
+    fields = ('probeRef','lifecycle','health','acknowledged','summary','lastChange','lastUpdate','squelched')
     fields = section.get_list('status fields', fields)
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
@@ -77,8 +82,54 @@ def status_callback(ns):
         print "query failed: " + str(e)
         
 
+@action
 def acknowledge_callback(ns):
-    pass
+    # client settings
+    section = ns.get_section('client')
+    server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
+    # client:acknowledge settings
+    section = ns.get_section('client:acknowledge')
+    paths = urlencode(map(lambda arg: ('path', arg), ns.get_args()))
+    # get the system uri
+    agent_url = 'http://localhost:9844/XMLRPC'
+    proxy = Proxy(agent_url)
+    try:
+        system = yield proxy.callRemote('getUri')
+    except Exception, e:
+        print "failed to discover agent system uri: " + str(e)
+        return
+    # get the status
+    try:
+        url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
+        logger.debug("connecting to %s", url)
+        response = yield http.agent(timeout=3).request('GET', url)
+        logger.debug("received response %i %s", response.code, response.phrase)
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code != 200:
+            print "server returned error: " + from_json(body)['description']
+        correlations = dict(map(lambda x: (x['probeRef'], x['correlation']),
+            filter(lambda x: 'correlation' in x and not 'acknowledgement' in x, from_json(body).values()
+            )))
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # acknowledge probes
+    try:
+        url = urljoin(server, 'objects/systems/' + str(system) + '/actions/acknowledge')
+        logger.debug("connecting to %s", url)
+        headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
+        body = {'uri': str(system), 'correlations': correlations}
+        response = yield http.agent(timeout=3).request('POST', url, headers, as_json(body))
+        logger.debug("received response %i %s", response.code, response.phrase)
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code != 200:
+            print "server returned error: " + from_json(body)['description']
+        acknowledgements = dict(map(lambda (ref,ack): (parse_proberef(ref), ack), from_json(body).items()))
+    except Exception, e:
+        print "command failed: " + str(e)
+
 
 def unacknowledge_callback(ns):
     pass
@@ -107,7 +158,7 @@ local_actions = [
       usage="[OPTIONS] [PATH...]",
       description="acknowledge unhealthy local PATH",
       options=[
-        Option('m', 'message', 'message', help="Use the given MESSAGE as the acknowledgement message", metavar="MESSAGE"),
+        Option('m', 'message', 'message', help="append MESSAGE to the acknowledgement", metavar="MESSAGE"),
         ],
       callback=acknowledge_callback),
     Action("unacknowledge",

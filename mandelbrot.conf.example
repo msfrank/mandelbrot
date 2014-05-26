@@ -21,11 +21,11 @@ description = "this is a generic host description"
 tags = "server" "mandelbrot.io" "host" "generic"
 
 [probes]
-probe interval = 60 seconds
+probe interval = 20 seconds
 probe splay = 5 seconds
 joining timeout = 5 minutes
 probe timeout = 1 minute
-alert timeout = 1 minute
+alert timeout = 90 seconds
 leaving timeout = 12 hours
 flap window = 10 minutes
 flap deviations = 5

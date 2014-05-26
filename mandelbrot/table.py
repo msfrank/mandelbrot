@@ -107,14 +107,14 @@ def millis2ctime(millis):
     return time.ctime(millis / 1000.0)
 
 def bool2checkbox(value):
-    if value == True:
-        return "*"
-    return ""
+    if value is False or value is None:
+        return ""
+    return "*"
 
 def bool2string(value):
-    if value == True:
-        return "true"
-    return "false"
+    if value is False or value is None:
+        return "false"
+    return "true"
 
 def proberef2path(value):
     try:
