@@ -18,11 +18,11 @@
 import time
 from urllib import urlencode
 from urlparse import urljoin
-from twisted.internet import reactor
 from twisted.web.xmlrpc import Proxy
+from mandelbrot.client.action import action
 from mandelbrot.http import http, as_json, from_json
 from mandelbrot.table import sort_results, render_table
-from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
+from mandelbrot.loggers import getLogger
 
 logger = getLogger('mandelbrot.client.local')
 
@@ -35,11 +35,11 @@ renderers = {
     'squelched':  bool2checkbox,
 }
 
+@action
 def status_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
-    debug = section.get_bool("debug", False)
     # client:status settings
     section = ns.get_section('client:status')
     fields = ('probeRef','lifecycle','health','summary','timestamp','lastChange','lastUpdate','squelched')
@@ -47,38 +47,35 @@ def status_callback(ns):
     sort = section.get_list('status sort', ['probeRef'])
     tablefmt = section.get_str('status table format', 'simple')
     paths = urlencode(map(lambda arg: ('path', arg), ns.get_args()))
-    if debug:
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
-    # 
+    # get the system uri
     agent_url = 'http://localhost:9844/XMLRPC'
     proxy = Proxy(agent_url)
-    defer = proxy.callRemote('getUri')
-    def on_uri(system):
+    try:
+        system = yield proxy.callRemote('getUri')
+    except Exception, e:
+        print "failed to discover agent system uri: " + str(e)
+        return
+    # get the status
+    try:
         url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
         logger.debug("connecting to %s", url)
-        defer = http.agent(timeout=3).request('GET', url)
-        def on_body(body, code):
-            logger.debug("received body %s", body)
-            if code == 200:
-                status = sort_results(from_json(body).values(), sort)
-                print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
-            else:
-                print "error: " + from_json(body)['description']
-            reactor.stop()
-        def on_failure(failure):
-            logger.debug("query failed: %s", failure.getErrorMessage())
-            reactor.stop()
-        def on_response(response):
-            logger.debug("received response %i %s", response.code, response.phrase)
-            http.read_body(response).addCallbacks(on_body, on_failure, callbackArgs=(response.code,))
-        defer.addCallbacks(on_response, on_failure)
-    def on_failure(failure):
-        print "failed to discover agent system uri: " + failure.getErrorMessage()
-        reactor.stop()
-    defer.addCallbacks(on_uri, on_failure)
-    reactor.run()
+        response = yield http.agent(timeout=3).request('GET', url)
+        logger.debug("received response %i %s", response.code, response.phrase)
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # parse the response body
+    try:
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code == 200:
+            status = sort_results(from_json(body).values(), sort)
+            print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+        else:
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "query failed: " + str(e)
+        
 
 def acknowledge_callback(ns):
     pass
