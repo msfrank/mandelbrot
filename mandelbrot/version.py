@@ -15,4 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-from mandelbrot.version import versionstring
+__version__ = (0, 0, 4)
+
+def versionstring():
+    """
+    Return the version number as a string.
+    """
+    return "%i.%i.%i" % __version__
