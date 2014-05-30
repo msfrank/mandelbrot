@@ -1,12 +1,11 @@
 [supervisor]
 supervisor url = http://localhost:8080
-ssl client certificate file = /etc/pki/tls/certs/mandelbrot-client.crt
-ssl ca certificate file = /etc/pki/tls/certs/ca-bundle.crt 
-use srv records = true
 
 [agent]
 max registration attempts = 3
 registration attempt delay = 10 seconds
+runtime user = mandelbrot
+runtime group = mandelbrot
 
 [client]
 
@@ -26,34 +25,24 @@ alert timeout = 90 seconds
 leaving timeout = 12 hours
 flap window = 10 minutes
 flap deviations = 5
-#notification behavior = emit
-#notifications = lifecycle-changes health-alerts probe-acknowledged
+notification behavior = emit
 
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad
 
-#[probe:/cpu]
-#probe type = io.mandelbrot.probe.SystemCPU
-#
-#[probe:/memory]
-#probe type = io.mandelbrot.probe.SystemMemory
-#
-#[probe:/disk]
-#probe type = io.mandelbrot.probe.SystemDiskUsage
-#
-#[probe:/net]
-#probe type = io.mandelbrot.probe.SystemNetPerformance
+[probe:/cpu]
+probe type = io.mandelbrot.probe.SystemCPU
 
-#[endpoint:dummy]
-#accepts = [ io.mandelbrot.* ]
-#endpoint type = io.mandelbrot.endpoint.DummyEndpoint
+[probe:/memory]
+probe type = io.mandelbrot.probe.SystemMemory
+
+[probe:/disk]
+probe type = io.mandelbrot.probe.SystemDiskUsage
+
+[probe:/net]
+probe type = io.mandelbrot.probe.SystemNetPerformance
 
 [endpoint:http]
 accepts = [ io.mandelbrot.* ]
 endpoint type = io.mandelbrot.endpoint.HTTPEndpoint
 endpoint url = http://localhost:8080
-
-[maintenance]
-default editor = vi
-editor template = /etc/mandelbrot/maintenance.template
-

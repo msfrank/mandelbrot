@@ -61,6 +61,26 @@ class Agent(MultiService):
         # get agent process configuration
         self.foreground = section.get_bool("foreground", False)
         self.pidfile = section.get_path("pid file", os.path.join(defaults.get("RUN_DIR"), "agent.pid"))
+        name = section.get_str("runtime user")
+        if name is None:
+            self.uid = None
+        else:
+            import pwd
+            try:
+                self.uid = pwd.getpwnam(name).pw_uid
+            except:
+                logger.warning("failed to get uid for runtime user %s", name)
+                self.uid = None
+        name = section.get_str("runtime group")
+        if name is None:
+            self.gid = None
+        else:
+            import grp
+            try:
+                self.gid = grp.getrgnam(name).gr_gid
+            except:
+                logger.warning("failed to get gid for runtime group %s", name)
+                self.gid = None
         # get supervisor configuration
         self.supervisor = section.get_str("supervisor url", ns.get_section('supervisor').get_str('supervisor url'))
         # create the internal agent queue
@@ -150,8 +170,11 @@ class Agent(MultiService):
         daemon.working_directory = "/"
         if self.pidfile is not None:
             daemon.pidfile = TimeoutPIDLockFile(self.pidfile)
-        #daemon.uid = None
-        #daemon.gid = None
+        if os.getuid() == 0:
+            daemon.uid = self.uid
+            daemon.gid = self.gid
+        elif self.uid is not None or self.gid is not None:
+            logger.warning("not dropping privileges, process uid is not 0")
         # FIXME: hack to ensure that fds stay open when passed to daemon context
         daemon.files_preserve = [x for x in xrange(64)]
         if self.foreground:
