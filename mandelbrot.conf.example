@@ -7,9 +7,6 @@ use srv records = true
 [agent]
 max registration attempts = 3
 registration attempt delay = 10 seconds
-state directory = state/
-spool directory = spool/
-run directory = run/
 
 [client]
 
@@ -35,12 +32,12 @@ flap deviations = 5
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad
 
-[probe:/cpu]
-probe type = io.mandelbrot.probe.SystemCPU
-
-[probe:/memory]
-probe type = io.mandelbrot.probe.SystemMemory
-
+#[probe:/cpu]
+#probe type = io.mandelbrot.probe.SystemCPU
+#
+#[probe:/memory]
+#probe type = io.mandelbrot.probe.SystemMemory
+#
 #[probe:/disk]
 #probe type = io.mandelbrot.probe.SystemDiskUsage
 #

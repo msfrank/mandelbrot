@@ -53,14 +53,14 @@ class Agent(MultiService):
         self.maxattempts = section.get_int("max registration attempts", None)
         self.attemptwait = timedelta_to_seconds(section.get_timedelta("registration attempt delay", datetime.timedelta(minutes=5)))
         # configure the state db
-        path = section.get_path("state directory", os.path.join(defaults["LOCALSTATE_DIR"], "mandelbrot"))
-        self.state = StateDatabase(path)
+        path = section.get_path("state directory", defaults.get("LOCALSTATE_DIR"))
+        self.state = StateDatabase(os.path.join(path, "agent"))
         # load the inventory
         self.inventory = InventoryDatabase(self.plugins, self.state)
         self.inventory.configure(ns)
         # get agent process configuration
         self.foreground = section.get_bool("foreground", False)
-        self.pidfile = section.get_path("pid file", None)
+        self.pidfile = section.get_path("pid file", os.path.join(defaults.get("RUN_DIR"), "agent.pid"))
         # get supervisor configuration
         self.supervisor = section.get_str("supervisor url", ns.get_section('supervisor').get_str('supervisor url'))
         # create the internal agent queue

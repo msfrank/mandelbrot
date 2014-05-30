@@ -28,12 +28,14 @@ class StateDatabase(object):
     """
     def __init__(self, path):
         path = os.path.abspath(path)
-        if not os.access(path, os.F_OK):
-            raise ConfigureError("state directory %s does not exist" % path)
-        if not os.access(path, os.R_OK):
-            raise ConfigureError("state directory %s is not readable" % path)
-        if not os.access(path, os.W_OK):
-            raise ConfigureError("state directory %s is not writable" % path)
+        if os.path.exists(path):
+            if not os.path.isdir(path):
+                raise Exception("path %s exists but is not a directory" % path)
+        else:
+            try:
+                os.mkdir(path)
+            except Exception, e:
+                raise Exception("failed to create state directory %s" % path)
         self._db = DirDBM(path) 
         logger.debug("reading state from " + path)
 
