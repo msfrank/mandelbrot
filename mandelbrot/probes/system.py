@@ -181,12 +181,24 @@ class SystemDiskUsage(Probe):
 
 class SystemDiskPerformance(Probe):
     """
+    Check system disk performance.
+
+    Parameters:
+    disk device              = PATH: path
+    read failed threshold    = USAGE: int
+    read degraded threshold  = USAGE: int
+    write failed threshold   = USAGE: int
+    write degraded threshold = USAGE: int
     """
     def get_type(self):
         return "io.mandelbrot.probe.SystemDiskPerformance"
 
     def configure(self, section):
         self.device = section.get_path("disk device", None)
+        self.readfailed = section.get_size("read failed threshold", None)
+        self.readdegraded = section.get_size("read degraded threshold", None)
+        self.writefailed = section.get_size("write failed threshold", None)
+        self.writedegraded = section.get_size("write degraded threshold", None)
         Probe.configure(self, section)
 
     def probe(self):
@@ -200,16 +212,36 @@ class SystemDiskPerformance(Probe):
             summary = "%i reads, %i writes on %s" % (reads,writes,self.device)
         else:
             summary = "%i reads, %i writes across all devices" % (reads,writes)
+        if self.readfailed is not None and reads > self.readfailed:
+            return Evaluation(Health.FAILED, summary)
+        if self.writefailed is not None and writes > self.writefailed:
+            return Evaluation(Health.FAILED, summary)
+        if self.readdegraded is not None and reads > self.readdegraded:
+            return Evaluation(Health.DEGRADED, summary)
+        if self.writedegraded is not None and writes > self.writedegraded:
+            return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
 class SystemNetPerformance(Probe):
     """
+    Check system network performance.
+
+    Parameters:
+    net device              = DEVICE: str
+    send failed threshold   = USAGE: int
+    send degraded threshold = USAGE: int
+    recv failed threshold   = USAGE: int
+    recv degraded threshold = USAGE: int
     """
     def get_type(self):
         return "io.mandelbrot.probe.SystemNetPerformance"
 
     def configure(self, section):
         self.device = section.get_path("net device", None)
+        self.sendfailed = section.get_size("send failed threshold", None)
+        self.senddegraded = section.get_size("send degraded threshold", None)
+        self.recvfailed = section.get_size("recv failed threshold", None)
+        self.recvdegraded = section.get_size("recv degraded threshold", None)
         Probe.configure(self, section)
 
     def probe(self):
@@ -227,5 +259,13 @@ class SystemNetPerformance(Probe):
             summary = "%i packets sent, %i packets received on %s" % (tx,rx,self.device)
         else:
             summary = "%i packets sent, %i packets received across all devices" % (tx,rx)
+        if self.sendfailed is not None and tx > self.sendfailed:
+            return Evaluation(Health.FAILED, summary)
+        if self.recvfailed is not None and rx > self.recvfailed:
+            return Evaluation(Health.FAILED, summary)
+        if self.senddegraded is not None and tx > self.senddegraded:
+            return Evaluation(Health.DEGRADED, summary)
+        if self.recvdegraded is not None and rx > self.recvdegraded:
+            return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
