@@ -28,7 +28,7 @@ setup(
     install_requires=[
         'zope.interface',
         'twisted >= 13.2.0',
-        'pesky-settings >= 0.0.3',
+        'pesky-settings >= 0.0.4',
         'pesky-defaults >= 0.0.2',
         'psutil >= 2.1.0',
         'tabulate >= 0.7.2',
