@@ -195,10 +195,10 @@ class SystemDiskPerformance(Probe):
 
     def configure(self, section):
         self.device = section.get_path("disk device", None)
-        self.readfailed = section.get_size("read failed threshold", None)
-        self.readdegraded = section.get_size("read degraded threshold", None)
-        self.writefailed = section.get_size("write failed threshold", None)
-        self.writedegraded = section.get_size("write degraded threshold", None)
+        self.readfailed = section.get_int("read failed threshold", None)
+        self.readdegraded = section.get_int("read degraded threshold", None)
+        self.writefailed = section.get_int("write failed threshold", None)
+        self.writedegraded = section.get_int("write degraded threshold", None)
         Probe.configure(self, section)
 
     def probe(self):
@@ -237,11 +237,11 @@ class SystemNetPerformance(Probe):
         return "io.mandelbrot.probe.SystemNetPerformance"
 
     def configure(self, section):
-        self.device = section.get_path("net device", None)
-        self.sendfailed = section.get_size("send failed threshold", None)
-        self.senddegraded = section.get_size("send degraded threshold", None)
-        self.recvfailed = section.get_size("recv failed threshold", None)
-        self.recvdegraded = section.get_size("recv degraded threshold", None)
+        self.device = section.get_str("net device", None)
+        self.sendfailed = section.get_int("send failed threshold", None)
+        self.senddegraded = section.get_int("send degraded threshold", None)
+        self.recvfailed = section.get_int("recv failed threshold", None)
+        self.recvdegraded = section.get_int("recv degraded threshold", None)
         Probe.configure(self, section)
 
     def probe(self):
