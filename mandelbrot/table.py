@@ -122,3 +122,17 @@ def proberef2path(value):
         return ref.path
     except:
         return ""
+
+def size2string(size):
+    if size < 1024:
+        return "%i bytes" % size
+    if size < 1024 * 1024:
+        return "%.1f kilobytes" % (float(size) / 1024.0)
+    if size < 1024 * 1024 * 1024:
+        return "%.1f megabytes" % (float(size) / (1024.0 * 1024.0))
+    if size < 1024 * 1024 * 1024 * 1024:
+        return "%.1f gigabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0))
+    if size < 1024 * 1024 * 1024 * 1024 * 1024:
+        return "%.1f terabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0))
+    if size < 1024 * 1024 * 1024 * 1024 * 1024 * 1024:
+        return "%.1f petabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0))

@@ -18,7 +18,7 @@
 import os, psutil
 from mandelbrot.probes import Probe
 from mandelbrot.evaluation import Evaluation, Health
-
+from mandelbrot.table import size2string
 
 class SystemLoad(Probe):
     """
@@ -28,7 +28,7 @@ class SystemLoad(Probe):
 
     degraded threshold  = LOAD1: float, LOAD5: float, LOAD15: float
     failed threshold    = LOAD1: float, LOAD5: float, LOAD15: float
-    divide per cpu      = PERCPU: boolean
+    divide per cpu      = PERCPU: boolean = false
     """
     def get_type(self):
         return "io.mandelbrot.probe.SystemLoad"
@@ -70,6 +70,7 @@ class SystemCPU(Probe):
     system degraded threshold = SYSTEM: percentage
     iowait failed threshold   = IOWAIT: percentage
     iowait degraded threshold = IOWAIT: percentage
+    extended summary          = EXTENDED: bool = false
     """
     def __init__(self):
         Probe.__init__(self)
@@ -113,13 +114,13 @@ class SystemCPU(Probe):
 
 class SystemMemory(Probe):
     """
-    Check system CPU utilization.
+    Check system memory utilization.
 
     Parameters:
-    memory failed threshold   = MEMORY: size
-    memory degraded threshold = MEMORY: size
-    swap failed threshold     = SWAP: size
-    swap degraded threshold   = SWAP: size
+    memory failed threshold   = USAGE: size
+    memory degraded threshold = USAGE: size
+    swap failed threshold     = USAGE: size
+    swap degraded threshold   = USAGE: size
     """
     def get_type(self):
         return "io.mandelbrot.probe.SystemMemory"
@@ -131,25 +132,13 @@ class SystemMemory(Probe):
         self.swapdegraded = section.get_size("swap degraded threshold", None)
         Probe.configure(self, section)
 
-    def _printsize(self, size):
-        if size < 1024:
-            return "%i bytes" % size
-        if size < 1024 * 1024:
-            return "%.1f kilobytes" % (float(size) / 1024.0)
-        if size < 1024 * 1024 * 1024:
-            return "%.1f megabytes" % (float(size) / (1024.0 * 1024.0))
-        if size < 1024 * 1024 * 1024 * 1024:
-            return "%.1f gigabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0))
-        if size < 1024 * 1024 * 1024 * 1024 * 1024:
-            return "%.1f terabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0))
-
     def probe(self):
         memory = psutil.virtual_memory()
         memused = memory.percent
-        memtotal = self._printsize(memory.total)
+        memtotal = size2string(memory.total)
         swap = psutil.swap_memory()
         swapused = swap.percent
-        swaptotal = self._printsize(swap.total)
+        swaptotal = size2string(swap.total)
         summary = "%.1f%% used of %s of physical memory; %.1f%% used of %s of swap" % (memused,memtotal,swapused,swaptotal)
         if self.memoryfailed is not None and memory.used > self.memoryfailed:
             return Evaluation(Health.FAILED, summary)
@@ -163,19 +152,31 @@ class SystemMemory(Probe):
 
 class SystemDiskUsage(Probe):
     """
+    Check system disk utilization.
+
+    Parameters:
+    disk partition          = PATH: path = /
+    disk failed threshold   = USAGE: size
+    disk degraded threshold = USAGE: size
     """
     def get_type(self):
         return "io.mandelbrot.probe.SystemDiskUsage"
 
     def configure(self, section):
         self.partition = section.get_path("disk partition", "/")
+        self.diskfailed = section.get_size("disk failed threshold", None)
+        self.diskdegraded = section.get_size("disk degraded threshold", None)
         Probe.configure(self, section)
 
     def probe(self):
         disk = psutil.disk_usage(self.partition)
         diskused = disk.percent
-        disktotal = disk.total
-        summary = "%.1f%% used of %i bytes on %s" % (diskused,disktotal,self.partition)
+        disktotal = size2string(disk.total)
+        summary = "%.1f%% used of %s on %s" % (diskused,disktotal,self.partition)
+        if self.diskfailed is not None and disk.used > self.diskfailed:
+            return Evaluation(Health.FAILED, summary)
+        if self.diskdegraded is not None and disk.used > self.diskdegraded:
+            return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
 class SystemDiskPerformance(Probe):
