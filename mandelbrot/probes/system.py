@@ -64,12 +64,12 @@ class SystemCPU(Probe):
     Check system CPU utilization.
 
     Parameters:
-    user failed threshold     = USER: percentage
-    user degraded threshold   = USER: percentage
-    system failed threshold   = SYSTEM: percentage
-    system degraded threshold = SYSTEM: percentage
-    iowait failed threshold   = IOWAIT: percentage
-    iowait degraded threshold = IOWAIT: percentage
+    user failed threshold     = USER: percent
+    user degraded threshold   = USER: percent
+    system failed threshold   = SYSTEM: percent
+    system degraded threshold = SYSTEM: percent
+    iowait failed threshold   = IOWAIT: percent
+    iowait degraded threshold = IOWAIT: percent
     extended summary          = EXTENDED: bool = false
     """
     def __init__(self):
@@ -81,12 +81,12 @@ class SystemCPU(Probe):
         return "io.mandelbrot.probe.SystemCPU"
 
     def configure(self, section):
-        self.userfailed = section.get_percentage("user failed threshold", None)
-        self.userdegraded = section.get_percentage("user degraded threshold", None)
-        self.systemfailed = section.get_percentage("system failed threshold", None)
-        self.systemdegraded = section.get_percentage("system degraded threshold", None)
-        self.iowaitfailed = section.get_percentage("iowait failed threshold", None)
-        self.iowaitdegraded = section.get_percentage("iowait degraded threshold", None)
+        self.userfailed = section.get_percent("user failed threshold", None)
+        self.userdegraded = section.get_percent("user degraded threshold", None)
+        self.systemfailed = section.get_percent("system failed threshold", None)
+        self.systemdegraded = section.get_percent("system degraded threshold", None)
+        self.iowaitfailed = section.get_percent("iowait failed threshold", None)
+        self.iowaitdegraded = section.get_percent("iowait degraded threshold", None)
         self.extended = section.get_bool("extended summary", False)
         Probe.configure(self, section)
 
