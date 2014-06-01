@@ -31,7 +31,7 @@ def action(fn):
     inlinefn = inlineCallbacks(fn)
     def on_return(ret):
         if isinstance(ret, Failure):
-            logger.debug("action failed: %s", failure.getErrorMessage())
+            print "action failed: " + ret.getErrorMessage()
         reactor.stop()
     def trampoline(ns):
         section = ns.get_section('client')
@@ -40,7 +40,9 @@ def action(fn):
             startLogging(StdoutHandler(), DEBUG)
         else:
             startLogging(None)
-        defer = inlinefn(ns)
-        defer.addBoth(on_return)
+        def when_running():
+            defer = inlinefn(ns)
+            defer.addBoth(on_return)
+        reactor.callWhenRunning(when_running)
         reactor.run()
     return trampoline
