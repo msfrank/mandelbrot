@@ -40,13 +40,11 @@ renderers = {
     'squelched':  bool2checkbox,
 }
 
+@action
 def system_status_callback(ns):
-    """
-    """
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
-    debug = section.get_bool("debug", False)
     # client:system:history settings
     section = ns.get_section('client:system:status')
     fields = ('probeRef','lifecycle','health','acknowledged','summary','lastChange','lastUpdate','squelched')
@@ -56,39 +54,34 @@ def system_status_callback(ns):
     args = ns.get_args(parse_systemuri, minimum=1, names=('URI',))
     system = args[0]
     paths = urlencode(map(lambda arg: ('path', arg), args[1:]))
-    if debug:
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
-    # build query url
-    url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
-    # execute query
-    logger.debug("connecting to %s", url)
-    defer = http.agent(timeout=3).request('GET', url)
-    def onbody(body, code):
+    # get the status
+    try:
+        url = urljoin(server, 'objects/systems/' + str(system) + '/properties/status?' + paths)
+        logger.debug("connecting to %s", url)
+        response = yield http.agent(timeout=3).request('GET', url)
+        logger.debug("received response %i %s", response.code, response.phrase)
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # parse the response body
+    try:
+        body = yield http.read_body(response)
         logger.debug("received body %s", body)
-        if code == 200:
+        if response.code == 200:
             status = sort_results(from_json(body).values(), sort)
             print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
-            print "error: " + from_json(body)['description']
-        reactor.stop()
-    def onfailure(failure):
-        logger.debug("query failed: %s", failure.getErrorMessage())
-        reactor.stop()
-    def onresponse(response):
-        logger.debug("received response %i %s", response.code, response.phrase)
-        http.read_body(response).addCallbacks(onbody, onfailure, callbackArgs=(response.code,))
-    defer.addCallbacks(onresponse, onfailure)
-    reactor.run()
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
 
+
+@action
 def system_history_callback(ns):
-    """
-    """
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
-    debug = section.get_bool("debug", False)
     # client:system:history settings
     section = ns.get_section('client:system:history')
     timerange = section.get_str('history timerange')
@@ -100,10 +93,6 @@ def system_history_callback(ns):
     args = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
     system = args[0]
     params = map(lambda arg: ('path', arg), args[1:])
-    if debug:
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
     # build query url
     if timerange is not None:
         start,end = parse_timerange(timerange)
@@ -114,32 +103,35 @@ def system_history_callback(ns):
     if limit is not None:
         params.append(('limit', limit))
     qs = urlencode(params)
-    url = urlparse(urljoin(server, 'objects/systems/' + str(system) + '/collections/history?' + qs))
-    # execute query
-    logger.debug("connecting to %s://%s", url.scheme, url.netloc)
-    logger.debug("GET %s?%s", url.path, url.query)
-    defer = http.agent(timeout=3).request('GET', url.geturl())
-    def onbody(body):
-        logger.debug("received body %s", body)
-        history = sort_results(from_json(body), sort)
-        print render_table(history, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
-        reactor.stop()
-    def onfailure(failure):
-        logger.debug("query failed: %s", failure.getErrorMessage())
-        reactor.stop()
-    def onresponse(response):
+    # get the history
+    try:
+        url = urlparse(urljoin(server, 'objects/systems/' + str(system) + '/collections/history?' + qs))
+        logger.debug("connecting to %s://%s", url.scheme, url.netloc)
+        logger.debug("GET %s?%s", url.path, url.query)
+        response = yield http.agent(timeout=3).request('GET', url.geturl())
         logger.debug("received response %i %s", response.code, response.phrase)
-        http.read_body(response).addCallbacks(onbody, onfailure)
-    defer.addCallbacks(onresponse, onfailure)
-    reactor.run()
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # parse the response body
+    try:
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code == 200:
+            history = sort_results(from_json(body), sort)
+            print render_table(history, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+        else:
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
 
+
+@action
 def system_notifications_callback(ns):
-    """
-    """
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
-    debug = section.get_bool("debug", False)
     # client:system:notifications settings
     section = ns.get_section('client:system:notifications')
     timerange = section.get_str('notifications timerange')
@@ -151,10 +143,6 @@ def system_notifications_callback(ns):
     args = ns.get_args(parse_systemuri, minimum=1, names=('URI'))
     system = args[0]
     params = map(lambda arg: ('path', arg), args[1:])
-    if debug:
-        startLogging(StdoutHandler(), DEBUG)
-    else:
-        startLogging(None)
     # build query url
     if timerange is not None:
         start,end = parse_timerange(timerange)
@@ -165,23 +153,28 @@ def system_notifications_callback(ns):
     if limit is not None:
         params.append(('limit', limit))
     qs = urlencode(params)
-    url = urljoin(server, 'objects/systems/' + str(system) + '/collections/notifications?' + qs)
-    # execute query
-    logger.debug("connecting to %s", url)
-    defer = http.agent(timeout=3).request('GET', url)
-    def onbody(body):
-        logger.debug("received body %s", body)
-        notifications = sort_results(from_json(body), sort)
-        print render_table(notifications, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
-        reactor.stop()
-    def onfailure(failure):
-        logger.debug("query failed: %s", failure.getErrorMessage())
-        reactor.stop()
-    def onresponse(response):
+    # get the notifications
+    try:
+        url = urljoin(server, 'objects/systems/' + str(system) + '/collections/notifications?' + qs)
+        logger.debug("connecting to %s", url)
+        response = yield http.agent(timeout=3).request('GET', url)
         logger.debug("received response %i %s", response.code, response.phrase)
-        http.read_body(response).addCallbacks(onbody, onfailure)
-    defer.addCallbacks(onresponse, onfailure)
-    reactor.run()
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # parse the response body
+    try:
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code == 200:
+            notifications = sort_results(from_json(body), sort)
+            print render_table(notifications, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+        else:
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+
 
 @action
 def system_acknowledge_callback(ns):
@@ -225,6 +218,7 @@ def system_acknowledge_callback(ns):
     except Exception, e:
         print "command failed: " + str(e)
     
+
 from pesky.settings.action import Action, NOACTION
 from pesky.settings.option import *
 
