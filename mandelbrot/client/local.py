@@ -74,8 +74,10 @@ def status_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            status = sort_results(from_json(body).values(), sort)
-            print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+            results = from_json(body).values()
+            if len(results) > 0:
+                status = sort_results(results, sort)
+                print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
             print "server returned error: " + from_json(body)['description']
     except Exception, e:

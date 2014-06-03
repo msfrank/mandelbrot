@@ -63,8 +63,10 @@ def server_systems_callback(ns):
                 system = result[1]
                 system['uri'] = result[0]
                 return system
-            systems = sort_results(map(makeresult, from_json(body).items()), sort)
-            print render_table(systems, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+            results = map(makeresult, from_json(body).items())
+            if len(results) > 0:
+                systems = sort_results(results, sort)
+                print render_table(systems, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
             print "server returned error: " + from_json(body)['description']
     except Exception, e:

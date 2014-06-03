@@ -68,8 +68,10 @@ def system_status_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            status = sort_results(from_json(body).values(), sort)
-            print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+            results = from_json(body).values()
+            if len(values) > 0:
+                status = sort_results(results, sort)
+                print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
             print "server returned error: " + from_json(body)['description']
     except Exception, e:
@@ -118,8 +120,10 @@ def system_history_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            history = sort_results(from_json(body), sort)
-            print render_table(history, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+            results = from_json(body)
+            if len(results) > 0:
+                history = sort_results(results, sort)
+                print render_table(history, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
             print "server returned error: " + from_json(body)['description']
     except Exception, e:
@@ -167,8 +171,10 @@ def system_notifications_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            notifications = sort_results(from_json(body), sort)
-            print render_table(notifications, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+            results = from_json(body)
+            if len(results) > 0:
+                notifications = sort_results(results, sort)
+                print render_table(notifications, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
             print "server returned error: " + from_json(body)['description']
     except Exception, e:
