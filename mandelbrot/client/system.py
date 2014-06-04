@@ -69,7 +69,7 @@ def system_status_callback(ns):
         logger.debug("received body %s", body)
         if response.code == 200:
             results = from_json(body).values()
-            if len(values) > 0:
+            if len(results) > 0:
                 status = sort_results(results, sort)
                 print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
         else:
