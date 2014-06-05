@@ -136,3 +136,9 @@ def size2string(size):
         return "%.1f terabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0))
     if size < 1024 * 1024 * 1024 * 1024 * 1024 * 1024:
         return "%.1f petabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0))
+
+def list2csv(values):
+    return ", ".join(values)
+
+def list2nsv(values):
+    return "\n".join(values)

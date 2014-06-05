@@ -27,11 +27,14 @@ from mandelbrot.loggers import getLogger
 
 logger = getLogger('mandelbrot.client.server')
 
-from mandelbrot.table import millis2ctime
+from mandelbrot.table import millis2ctime, list2csv
 renderers = {
     'joinedOn': millis2ctime,
     'lastUpdate': millis2ctime,
     'retiredOn':  millis2ctime,
+    'from':  millis2ctime,
+    'to':  millis2ctime,
+    'affected': list2csv,
 }
 
 @action
@@ -73,6 +76,43 @@ def server_systems_callback(ns):
         print "query failed: " + str(e)
         return
 
+
+@action
+def server_windows_callback(ns):
+    # client settings
+    section = ns.get_section('client')
+    server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
+    # client:system:history settings
+    section = ns.get_section('client:server:windows')
+    fields = ('id','from','to','affected')
+    fields = section.get_list('windows fields', fields)
+    sort = section.get_list('windows sort', ['from','to'])
+    tablefmt = section.get_str('windows table format', 'simple')
+    # get the windows
+    try:
+        url = urljoin(server, 'objects/windows')
+        logger.debug("connecting to %s", url)
+        response = yield http.agent(timeout=3).request('GET', url)
+        logger.debug("received response %i %s", response.code, response.phrase)
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+    # parse the response body
+    try:
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code == 200:
+            results = from_json(body)
+            if len(results) > 0:
+                windows = sort_results(results, sort)
+                print render_table(windows, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
+        else:
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "query failed: " + str(e)
+        return
+
+ 
     
 from pesky.settings.action import Action, NOACTION
 from pesky.settings.option import *
@@ -91,5 +131,14 @@ server_actions = Action("server",
                          Option('T', 'table-format', 'systems table format', help="display result using the specified FMT", metavar="FMT")
                          ],
                        callback=server_systems_callback),
+                     Action("windows",
+                       usage="[OPTIONS]",
+                       description="list all maintenance windows",
+                       options=[
+                         Option('f', 'fields', 'windows fields', help="display only the specified FIELDS", metavar="FIELDS"),
+                         Option('s', 'sort', 'windows sort', help="sort results using the specified FIELDS", metavar="FIELDS"),
+                         Option('T', 'table-format', 'windows table format', help="display result using the specified FMT", metavar="FMT")
+                         ],
+                       callback=server_windows_callback),
                      ]
                  )
