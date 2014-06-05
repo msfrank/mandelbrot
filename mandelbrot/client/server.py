@@ -31,7 +31,6 @@ from mandelbrot.table import millis2ctime, list2csv
 renderers = {
     'joinedOn': millis2ctime,
     'lastUpdate': millis2ctime,
-    'retiredOn':  millis2ctime,
     'from':  millis2ctime,
     'to':  millis2ctime,
     'affected': list2csv,
@@ -44,7 +43,7 @@ def server_systems_callback(ns):
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
     # client:system:history settings
     section = ns.get_section('client:server:systems')
-    fields = ('uri','joinedOn','lastUpdate','retiredOn')
+    fields = ('uri','joinedOn','lastUpdate')
     fields = section.get_list('systems fields', fields)
     sort = section.get_list('systems sort', ['uri'])
     tablefmt = section.get_str('systems table format', 'simple')
