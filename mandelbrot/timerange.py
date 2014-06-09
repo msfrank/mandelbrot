@@ -64,7 +64,11 @@ RelativeDateTime.setParseAction(parseRelativeDateTime)
 
 DateTime = ISODateTime | RelativeDateTime | EpochDateTime
 
-DateTimeRange = DateTime + Suppress(Literal('..')) + DateTime
+ClosedDateTimeRange = DateTime + Suppress(Literal('..')) + DateTime
+LeftOpenDateTimeRange = Literal('..') + DateTime
+RightOpenDateTimeRange = DateTime + Literal('..')
+
+DateTimeRange = ClosedDateTimeRange | LeftOpenDateTimeRange | RightOpenDateTimeRange
 
 def parse_timerange(string):
     """
@@ -73,4 +77,8 @@ def parse_timerange(string):
     Exception.
     """
     start,end = DateTimeRange.parseString(string, parseAll=True).asList()
+    if start == "..":
+        start = None
+    if end == "..":
+        end = None
     return (start,end)
