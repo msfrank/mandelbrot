@@ -45,7 +45,7 @@ def system_status_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
-    # client:system:history settings
+    # client:system:status settings
     section = ns.get_section('client:system:status')
     fields = ('probeRef','lifecycle','health','acknowledged','summary','lastChange','lastUpdate','squelched')
     fields = section.get_list('status fields', fields)
