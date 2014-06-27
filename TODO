@@ -1,18 +1,14 @@
-0.0.3
------
-* implement acknowledge command
-* implement metadata and policy query commands
+immediately
+-----------
 
 
-0.0.4
+0.0.7
 -----
-* parse PATH param for local and system queries
 
 
 backlog
 -------
-* add commands to search state service, history service, notification service
-  by specifying a lucene query
 * implement interactive maintenance command
 * create record in client db when admin enters/exits maintenance, and surface
   this information in client queries
+* implement metadata and policy query commands

@@ -92,9 +92,49 @@ def window_modify_callback(ns):
     added = section.get_list('window add refs')
     removed = section.get_list('window remove refs')
     timerange = section.get_str('window timerange')
+    message = section.get_str('window message')
+    # editor settings
+    section = ns.get_section('editor')
+    editor = section.get_path('editor')
+    tmpdir = section.get_path('tmp directory')
     # get window id
     (window,) = ns.get_args(str, minimum=1, maximum=1, names=('ID',))
-    # delete the window
+    # read message
+    if message is None:
+        # get previous content
+        try:
+            url = urljoin(server, 'objects/windows')
+            logger.debug("connecting to %s", url)
+            response = yield http.agent(timeout=3).request('GET', url)
+            logger.debug("received response %i %s", response.code, response.phrase)
+            body = yield http.read_body(response)
+            logger.debug("received body %s", body)
+            if response.code != 200:
+                raise Exception(from_json(body)['description'])
+            windows = dict(map(lambda x: (x['id'], x), from_json(body)))
+            if not window in windows:
+                raise Exception("maintenance window %s doesn't exist" % window)
+            if 'description' in windows[window]:
+                description = windows[window]['description']
+            else:
+                description = None
+        except Exception, e:
+            print "query failed: " + str(e)
+            return
+        # run the editor using the current window description as content
+        message = run_editor(editor, tmpdir, description + initial_content)
+        if message is None:
+            print "error: no message was specified"
+            return
+        message = strip_comments(message)
+        if message == "":
+            print "error: no message was specified"
+            return
+    elif message == "-":
+        message = strip_comments(sys.stdin.read())
+    else:
+        message = strip_comments(message)
+    # modify the window
     try:
         body = dict()
         if added is not None:
@@ -105,6 +145,8 @@ def window_modify_callback(ns):
             start,end = parse_timewindow(timerange)
             body['from'] = start.isoformat()
             body['to'] = end.isoformat()
+        if message is not None:
+            body['description'] = message
         url = urljoin(server, 'objects/windows/' + window)
         logger.debug("connecting to %s", url)
         headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
