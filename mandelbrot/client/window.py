@@ -36,7 +36,6 @@ initial_content = """
 # a hash '#' are ignored.
 """
 
-
 @action
 def window_create_callback(ns):
     # client settings
@@ -72,12 +71,36 @@ def window_create_callback(ns):
         url = urljoin(server, 'objects/windows')
         logger.debug("connecting to %s", url)
         headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
-        body = {'affected': affected, 'from': start.isoformat(), 'to': end.isoformat(), 'message': message}
+        body = {'affected': affected, 'from': start.isoformat(), 'to': end.isoformat(), 'description': message}
         response = yield http.agent(timeout=3).request('POST', url, headers, as_json(body))
         logger.debug("received response %i %s", response.code, response.phrase)
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
-        if response.code != 201:
+        if response.code != 202:
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "command failed: " + str(e)
+        return
+
+@action
+def window_delete_callback(ns):
+    # client settings
+    section = ns.get_section('client')
+    server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
+    # client:window:create settings
+    section = ns.get_section('client:window:delete')
+    # get list of affected probes
+    (window,) = ns.get_args(str, minimum=1, maximum=1, names=('ID',))
+    # delete the window
+    try:
+        url = urljoin(server, 'objects/windows/' + window)
+        logger.debug("connecting to %s", url)
+        headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
+        response = yield http.agent(timeout=3).request('DELETE', url, headers)
+        logger.debug("received response %i %s", response.code, response.phrase)
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code != 200:
             print "server returned error: " + from_json(body)['description']
     except Exception, e:
         print "command failed: " + str(e)
@@ -100,5 +123,9 @@ window_actions = Action("window",
                          Option('m', 'message', 'window message', help="use MESSAGE to describe the maintenance window", metavar="MESSAGE"),
                          ],
                        callback=window_create_callback),
+                     Action("delete",
+                       usage="[OPTIONS] ID",
+                       description="delete the specified maintenance window",
+                       callback=window_delete_callback),
                      ]
                  )
