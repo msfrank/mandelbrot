@@ -81,9 +81,9 @@ def server_windows_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
-    # client:system:history settings
+    # client:server:windows settings
     section = ns.get_section('client:server:windows')
-    fields = ('id','from','to','affected')
+    fields = ('id','from','to','description','affected')
     fields = section.get_list('windows fields', fields)
     sort = section.get_list('windows sort', ['from','to'])
     tablefmt = section.get_str('windows table format', 'simple')
