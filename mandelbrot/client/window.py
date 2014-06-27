@@ -83,13 +83,49 @@ def window_create_callback(ns):
         return
 
 @action
+def window_modify_callback(ns):
+    # client settings
+    section = ns.get_section('client')
+    server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
+    # client:window:modify settings
+    section = ns.get_section('client:window:modify')
+    added = section.get_list('window add refs')
+    removed = section.get_list('window remove refs')
+    timerange = section.get_str('window timerange')
+    # get window id
+    (window,) = ns.get_args(str, minimum=1, maximum=1, names=('ID',))
+    # delete the window
+    try:
+        body = dict()
+        if added is not None:
+            body['added'] = added
+        if removed is not None:
+            body['removed'] = removed
+        if timerange is not None:
+            start,end = parse_timewindow(timerange)
+            body['from'] = start.isoformat()
+            body['to'] = end.isoformat()
+        url = urljoin(server, 'objects/windows/' + window)
+        logger.debug("connecting to %s", url)
+        headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
+        response = yield http.agent(timeout=3).request('PUT', url, headers, as_json(body))
+        logger.debug("received response %i %s", response.code, response.phrase)
+        body = yield http.read_body(response)
+        logger.debug("received body %s", body)
+        if response.code != 200:
+            print "server returned error: " + from_json(body)['description']
+    except Exception, e:
+        print "command failed: " + str(e)
+        return
+
+@action
 def window_delete_callback(ns):
     # client settings
     section = ns.get_section('client')
     server = section.get_str('supervisor url', ns.get_section('supervisor').get_str('supervisor url'))
     # client:window:create settings
     section = ns.get_section('client:window:delete')
-    # get list of affected probes
+    # get window id
     (window,) = ns.get_args(str, minimum=1, maximum=1, names=('ID',))
     # delete the window
     try:
@@ -123,6 +159,16 @@ window_actions = Action("window",
                          Option('m', 'message', 'window message', help="use MESSAGE to describe the maintenance window", metavar="MESSAGE"),
                          ],
                        callback=window_create_callback),
+                     Action("modify",
+                       usage="[OPTIONS] ID",
+                       description="modify an existing maintenance window",
+                       options=[
+                         Option('i', 'include', 'window add refs', help="Add REFs to affected list", metavar="REF..."),
+                         Option('e', 'exclude', 'window remove refs', help="Remove REFs from affected list", metavar="REF..."),
+                         Option('t', 'range', 'window timerange', help="set maintenance window to the specified TIMEWINDOW", metavar="TIMEWINDOW"),
+                         Option('m', 'message', 'window message', help="use MESSAGE to describe the maintenance window", metavar="MESSAGE"),
+                         ],
+                       callback=window_modify_callback),
                      Action("delete",
                        usage="[OPTIONS] ID",
                        description="delete the specified maintenance window",
