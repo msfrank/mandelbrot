@@ -70,11 +70,42 @@ RightOpenDateTimeRange = DateTime + Literal('..')
 
 DateTimeRange = ClosedDateTimeRange | LeftOpenDateTimeRange | RightOpenDateTimeRange
 
+DateTimePlusDelta = DateTime + Suppress(Literal('+')) + TimeValue + TimeUnit
+def parseDateTimePlusDelta(tokens):
+    start = tokens[0]
+    value = long(tokens[1])
+    magnify = tokens[2]
+    delta = timedelta(seconds=magnify(value))
+    return [start, start + delta]
+DateTimePlusDelta.setParseAction(parseDateTimePlusDelta)
+
+NowPlusDelta = Suppress(Literal('+')) + TimeValue + TimeUnit
+def parseNowPlusDelta(tokens):
+    start = datetime.now(tzutc())
+    value = long(tokens[0])
+    magnify = tokens[1]
+    delta = timedelta(seconds=magnify(value))
+    return [start, start + delta]
+NowPlusDelta.setParseAction(parseNowPlusDelta)
+
+DateTimeWindow = ClosedDateTimeRange | DateTimePlusDelta | NowPlusDelta
+
+def parse_datetime(string):
+    """
+    Parse a datetime string.  Datetimes may be specified using the following formats:
+    """
+    return DateTime.parseString(string, parseAll=True).asList()[0]
+
 def parse_timerange(string):
     """
-    Parse a timerange in the format of <start>..<end>, and return a 2-tuple
-    containing the start and end datetimes in UTC timezone, otherwise throw
-    Exception.
+    Parse a timerange string.  Timeranges may be specified using the following formats:
+
+    START..END      between START and END
+    START..         from START to infinity
+    ..END           from -infinity to END
+   
+    Returns a 2-tuple containing the start and end datetimes in UTC timezone,
+    otherwise throws Exception.
     """
     start,end = DateTimeRange.parseString(string, parseAll=True).asList()
     if start == "..":
@@ -82,3 +113,17 @@ def parse_timerange(string):
     if end == "..":
         end = None
     return (start,end)
+
+def parse_timewindow(string):
+    """
+    Parse a timewindow.  Timewindows may be specified using the following
+    formats:
+
+    START..END
+    START+DELTA
+    +DELTA
+
+    Returns a 2-tuple containing the start and end datetimes in UTC timezone,
+    otherwise throws Exception.
+    """
+    return DateTimeWindow.parseString(string, parseAll=True).asList()
