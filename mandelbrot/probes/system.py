@@ -16,11 +16,11 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, psutil
-from mandelbrot.probes import Probe
+from mandelbrot.probes import ScalarProbe
 from mandelbrot.evaluation import Evaluation, Health
 from mandelbrot.table import size2string
 
-class SystemLoad(Probe):
+class SystemLoad(ScalarProbe):
     """
     Check system load.
 
@@ -39,7 +39,7 @@ class SystemLoad(Probe):
         self.degraded = section.get_args("degraded threshold", float, float, float,
                 names=('LOAD1','LOAD5','LOAD15'), minimum=3, maximum=3)
         self.percpu = section.get_bool("divide per cpu", False)
-        Probe.configure(self, section)
+        ScalarProbe.configure(self, section)
 
     def probe(self):
         load1, load5, load15 = os.getloadavg()
@@ -59,7 +59,7 @@ class SystemLoad(Probe):
                 return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
-class SystemCPU(Probe):
+class SystemCPU(ScalarProbe):
     """
     Check system CPU utilization.
 
@@ -73,7 +73,7 @@ class SystemCPU(Probe):
     extended summary          = EXTENDED: bool = false
     """
     def __init__(self):
-        Probe.__init__(self)
+        ScalarProbe.__init__(self)
         # throw away the first value
         psutil.cpu_times_percent()
 
@@ -88,7 +88,7 @@ class SystemCPU(Probe):
         self.iowaitfailed = section.get_percent("iowait failed threshold", None)
         self.iowaitdegraded = section.get_percent("iowait degraded threshold", None)
         self.extended = section.get_bool("extended summary", False)
-        Probe.configure(self, section)
+        ScalarProbe.configure(self, section)
 
     def probe(self):
         times = psutil.cpu_times_percent()
@@ -112,7 +112,7 @@ class SystemCPU(Probe):
             return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
-class SystemMemory(Probe):
+class SystemMemory(ScalarProbe):
     """
     Check system memory utilization.
 
@@ -130,7 +130,7 @@ class SystemMemory(Probe):
         self.memorydegraded = section.get_size("memory degraded threshold", None)
         self.swapfailed = section.get_size("swap failed threshold", None)
         self.swapdegraded = section.get_size("swap degraded threshold", None)
-        Probe.configure(self, section)
+        ScalarProbe.configure(self, section)
 
     def probe(self):
         memory = psutil.virtual_memory()
@@ -150,7 +150,7 @@ class SystemMemory(Probe):
             return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
-class SystemDiskUsage(Probe):
+class SystemDiskUsage(ScalarProbe):
     """
     Check system disk utilization.
 
@@ -166,7 +166,7 @@ class SystemDiskUsage(Probe):
         self.partition = section.get_path("disk partition", "/")
         self.diskfailed = section.get_size("disk failed threshold", None)
         self.diskdegraded = section.get_size("disk degraded threshold", None)
-        Probe.configure(self, section)
+        ScalarProbe.configure(self, section)
 
     def probe(self):
         disk = psutil.disk_usage(self.partition)
@@ -179,7 +179,7 @@ class SystemDiskUsage(Probe):
             return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
-class SystemDiskPerformance(Probe):
+class SystemDiskPerformance(ScalarProbe):
     """
     Check system disk performance.
 
@@ -199,7 +199,7 @@ class SystemDiskPerformance(Probe):
         self.readdegraded = section.get_int("read degraded threshold", None)
         self.writefailed = section.get_int("write failed threshold", None)
         self.writedegraded = section.get_int("write degraded threshold", None)
-        Probe.configure(self, section)
+        ScalarProbe.configure(self, section)
 
     def probe(self):
         if self.device is not None:
@@ -222,7 +222,7 @@ class SystemDiskPerformance(Probe):
             return Evaluation(Health.DEGRADED, summary)
         return Evaluation(Health.HEALTHY, summary)
 
-class SystemNetPerformance(Probe):
+class SystemNetPerformance(ScalarProbe):
     """
     Check system network performance.
 
@@ -242,7 +242,7 @@ class SystemNetPerformance(Probe):
         self.senddegraded = section.get_int("send degraded threshold", None)
         self.recvfailed = section.get_int("recv failed threshold", None)
         self.recvdegraded = section.get_int("recv degraded threshold", None)
-        Probe.configure(self, section)
+        ScalarProbe.configure(self, section)
 
     def probe(self):
         if self.device is not None:

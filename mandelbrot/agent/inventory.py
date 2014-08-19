@@ -35,9 +35,10 @@ class InventoryDatabase(object):
         self.probe_timeout = None
         self.alert_timeout = None
         self.leaving_timeout = None
-        self.flap_window = None
-        self.flap_deviations = None
-        self.notification_policy = None
+        self.scalar_flap_window = None
+        self.scalar_flap_deviations = None
+        self.aggregate_flap_window = None
+        self.aggregate_flap_deviations = None
         self.notifications = None
 
     def configure(self, ns):
@@ -57,10 +58,11 @@ class InventoryDatabase(object):
         self.probe_timeout = section.get_timedelta("probe timeout", datetime.timedelta(minutes=10))
         self.alert_timeout = section.get_timedelta("alert timeout", datetime.timedelta(minutes=10))
         self.leaving_timeout = section.get_timedelta("leaving timeout", datetime.timedelta(days=1))
-        self.flap_window = section.get_timedelta("flap window", datetime.timedelta(minutes=125))
-        self.flap_deviations = section.get_int("flap deviations", 7)
-        self.notification_behavior = section.get_str("notification behavior", "emit")
         self.notifications = section.get_list("notifications", None)
+        self.scalar_flap_window = section.get_timedelta("scalar flap window", 0)
+        self.scalar_flap_deviations = section.get_int("scalar flap deviations", 0)
+        self.aggregate_flap_window = section.get_timedelta("aggregate flap window", 0)
+        self.aggregate_flap_deviations = section.get_int("aggregate flap deviations", 0)
         # initialize each probe specified in the configuration
         for section in sorted(ns.find_sections('probe:'), key=lambda k: k.name):
             try:
@@ -113,25 +115,7 @@ class InventoryDatabase(object):
             children = {}
             for name,child in obj.children.items():
                 children[name] = makespec(child)
-            policy = obj.get_policy()
-            if not 'joiningTimeout' in policy:
-                policy['joiningTimeout'] = self.joining_timeout
-            if not 'probeTimeout' in policy:
-                policy['probeTimeout'] = self.probe_timeout
-            if not 'alertTimeout' in policy:
-                policy['alertTimeout'] = self.alert_timeout
-            if not 'leavingTimeout' in policy:
-                policy['leavingTimeout'] = self.leaving_timeout
-            if not 'flapWindow' in policy:
-                policy['flapWindow'] = self.flap_window
-            if not 'flapDeviations' in policy:
-                policy['flapDeviations'] = self.flap_deviations
-            if not 'notificationPolicy' in policy:
-                policy['notificationPolicy'] = dict()
-            if not 'behavior' in policy['notificationPolicy']:
-                policy['notificationPolicy']['behavior'] = self.notification_behavior
-            if not 'notifications' in policy['notificationPolicy'] and self.notifications is not None:
-                policy['notificationPolicy']['notifications'] = self.notifications
+            policy = obj.make_policy(self)
             return {'probeType': obj.get_type(), 'metadata': obj.get_metadata(), 'policy': policy, 'children': children}
         probes = {}
         for name,child in self.root.children.items():

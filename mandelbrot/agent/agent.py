@@ -29,7 +29,7 @@ from mandelbrot.agent.inventory import InventoryDatabase
 from mandelbrot.agent.probes import ProbeScheduler, timedelta_to_seconds
 from mandelbrot.agent.endpoints import EndpointWriter
 from mandelbrot.agent.xmlrpc import XMLRPCService
-from mandelbrot.http import http, as_json
+from mandelbrot.http import http, as_json, from_json
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 from mandelbrot.defaults import defaults
 from mandelbrot import versionstring
@@ -134,6 +134,13 @@ class Agent(MultiService):
                 # conflicts with existing system
                 elif response.code == 409:
                     reactor.stop()
+                # unknown error, fail fast and loud
+                else:
+                    def read_failure(body):
+                        logger.error("registration encountered a fatal error")
+                        logger.debug("HTTP response entity was:\n----\n" + body + "\n----")
+                        reactor.stop()
+                    http.read_body(response).addCallback(read_failure)
         def register(method, url, attempt, delay=None):
             if self.maxattempts is None or attempt <= self.maxattempts:
                 if delay is not None:

@@ -7,9 +7,6 @@ registration attempt delay = 10 seconds
 runtime user = mandelbrot
 runtime group = mandelbrot
 
-[client]
-
-
 [system]
 system type = io.mandelbrot.system.GenericHost
 display name = My Host
@@ -23,9 +20,8 @@ joining timeout = 5 minutes
 probe timeout = 1 minute
 alert timeout = 90 seconds
 leaving timeout = 12 hours
-flap window = 10 minutes
-flap deviations = 5
-notification behavior = emit
+scalar flap window = 10 minutes
+scalar flap deviations = 5
 
 [probe:/load]
 probe type = io.mandelbrot.probe.SystemLoad
@@ -37,7 +33,19 @@ probe type = io.mandelbrot.probe.SystemCPU
 probe type = io.mandelbrot.probe.SystemMemory
 
 [probe:/disk]
+probe type = io.mandelbrot.probe.Aggregate
+
+[probe:/disk/root]
 probe type = io.mandelbrot.probe.SystemDiskUsage
+disk partition = /
+
+[probe:/disk/home]
+probe type = io.mandelbrot.probe.SystemDiskUsage
+disk partition = /home
+
+[probe:/disk/tmp]
+probe type = io.mandelbrot.probe.SystemDiskUsage
+disk partition = /tmp
 
 [probe:/net]
 probe type = io.mandelbrot.probe.SystemNetPerformance

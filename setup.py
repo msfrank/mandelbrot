@@ -62,8 +62,8 @@ setup(
         ],
     entry_points={
         'console_scripts': [
-            'mandelbrot-agent=mandelbrot.agent:main',
             'mandelbrot=mandelbrot.client:main',
+            'mandelbrot-agent=mandelbrot.agent:main',
             ],
         'io.mandelbrot.endpoint': [
             'io.mandelbrot.endpoint.DummyEndpoint=mandelbrot.endpoints.dummy:DummyEndpoint',
@@ -76,6 +76,7 @@ setup(
             'io.mandelbrot.probe.SystemDiskUsage=mandelbrot.probes.system:SystemDiskUsage',
             'io.mandelbrot.probe.SystemDiskPerformance=mandelbrot.probes.system:SystemDiskPerformance',
             'io.mandelbrot.probe.SystemNetPerformance=mandelbrot.probes.system:SystemNetPerformance',
+            'io.mandelbrot.probe.Aggregate=mandelbrot.probes.container:Aggregate',
             ],
         'io.mandelbrot.system': [
             'io.mandelbrot.system.GenericHost=mandelbrot.systems.generic:GenericHost',
