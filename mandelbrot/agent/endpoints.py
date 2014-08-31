@@ -15,9 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import random, datetime, fnmatch
+import Queue, random, datetime, urlparse
 from threading import Thread
 from twisted.application.service import MultiService
+from pesky.settings import ConfigureError
+from mandelbrot.plugin import PluginError
 from mandelbrot.loggers import getLogger
 
 logger = getLogger('mandelbrot.agent.endpoints')
@@ -25,43 +27,59 @@ logger = getLogger('mandelbrot.agent.endpoints')
 class EndpointWriter(MultiService):
     """
     """
-    def __init__(self, plugins, deque):
+    def __init__(self, plugins):
         MultiService.__init__(self)
         self.setName("EndpointWriter")
         self.plugins = plugins
-        self.endpoints = dict()
-        self.deque = deque
+        self.endpoint = None
+        self.queue = None
         self.consumer = None
 
     def configure(self, ns):
-        # configure generic endpoint parameters
-        section = ns.get_section('endpoints')
-        # configure individual endpoints
-        for section in ns.find_sections('endpoint:'):
-            endpointname = section.name[9:]
-            logger.debug("creating endpoint %s", endpointname)
-            endpointtype = section.get_str('endpoint type')
-            accepts = section.get_list('accepts')
-            if endpointtype is not None:
-                try:
-                    endpoint = self.plugins.newinstance('io.mandelbrot.endpoint', endpointtype)
-                    endpoint.configure(section)
-                    self.endpoints[endpointname] = (accepts,endpoint)
-                    logger.debug("configured endpoint %s", endpointname)
-                except Exception, e:
-                    logger.warning("skipping endpoint %s: %s", endpointname, str(e))
-            else:
-                logger.warning("skipping endpoint %s: is missing endpoint type", endpointname)
+        section = ns.get_section('agent')
+        # get supervisor configuration
+        self.supervisor = section.get_str("supervisor url", ns.get_section('supervisor').get_str('supervisor url'))
+        url = urlparse.urlparse(self.supervisor)
+        # create the internal agent queue
+        queuesize = section.get_int("agent queue size", 4096)
+        self.queue = Queue.Queue(maxsize=queuesize)
+        logger.debug("created agent queue with size %i", queuesize)
+        # configure the endpoint
+        endpointtype = section.get_str('endpoint type')
+        if endpointtype is None:
+            try:
+                self.endpoint = self.plugins.newinstance('io.mandelbrot.endpoint.scheme', url.scheme)
+            except PluginError, e:
+                raise ConfigureError("unknown endpoint scheme %s" % url.scheme)
+        try:
+            self.endpoint = self.plugins.newinstance('io.mandelbrot.endpoint', endpointtype)
+        except PluginError, e:
+                raise ConfigureError("unknown endpoint type %s" % endpointtype)
+        section = ns.get_section('endpoint')
+        self.endpoint.configure(self.supervisor, section)
+        logger.debug("configured endpoint %s", self.supervisor)
 
     def startService(self):
         logger.debug("starting endpoint writer")
-        self.consumer = MessageConsumer(self.deque, self.endpoints)
+        self.consumer = MessageConsumer(self.queue, self.endpoint)
         self.consumer.start()
 
+    def get_queue(self):
+        return self.queue
+
+    def register(self, uri, registration):
+        return self.endpoint.register(uri, registration)
+
+    def update(self, uri, registration):
+        return self.endpoint.update(uri, registration)
+
+    def unregister(self, uri):
+        return self.endpoint.unregister(uri)
+ 
     def stopService(self):
         if self.consumer is not None:
             logger.debug("stopping message consumer thread")
-            self.deque.put(MessageConsumer.TERMINATE)
+            self.queue.put(MessageConsumer.TERMINATE)
             self.consumer.join()
         self.consumer = None
         logger.debug("stopped endpoint writer")
@@ -69,11 +87,11 @@ class EndpointWriter(MultiService):
 class MessageConsumer(Thread):
     """
     """
-    def __init__(self, queue, endpoints):
+    def __init__(self, queue, endpoint):
         Thread.__init__(self, name="message-consumer-thread")
         self.daemon = True
         self._queue = queue
-        self._endpoints = endpoints
+        self._endpoint = endpoint
 
     TERMINATE = 'terminate-thread'
 
@@ -82,14 +100,5 @@ class MessageConsumer(Thread):
             message = self._queue.get()
             if message is MessageConsumer.TERMINATE:
                 break
-            def endpoint_accepts_type(endpoint, filters, msgtype):
-                if filters is None:
-                    return True
-                for pattern in filters:
-                    if fnmatch.fnmatch(msgtype, pattern) == True:
-                        return True
-                return False
-            for filters,endpoint in self._endpoints.values():
-                if endpoint_accepts_type(endpoint, filters, message.msgtype):
-                    endpoint.send(message)
+            self._endpoint.send(message)
         logger.debug("message-consumer-thread finishes")

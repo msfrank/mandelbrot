@@ -20,13 +20,10 @@ from mandelbrot.mbobject import MBObject
 
 class ISystem(Interface):
 
-    def configure(self, section):
+    def configure(self, systemtype, settings, metadata, policy):
         ""
 
-    def set_id(self, objectid):
-        ""
-
-    def get_id(self):
+    def get_uri(self):
         ""
 
     def get_type(self):
@@ -35,57 +32,54 @@ class ISystem(Interface):
     def get_metadata(self):
         ""
 
+    def get_policy(self):
+        ""
+
+    def get_probe(self, name):
+        ""
+
+    def set_probe(self, name, probe):
+        ""
+
+    def iter_probes(self):
+        ""
+
     def describe(self):
         ""
 
-class System(MBObject):
+class System(object):
     """
     """
-    implements(ISystem)
-
     def __init__(self):
-        MBObject.__init__(self)
-        self._objectid = None
-        self._objecttype = None
-        self.name = None
-        self.description = None
-        self.tags = None
+        self._uri = None
+        self._systemtype = None
+        self._metadata = None
+        self._policy = None
+        self._probes = dict()
 
-    def configure(self, section):
-        self._objecttype = section.get_str('system type')
-        self.name = section.get_str('display name')
-        self.description = section.get_str('description')
-        self.tags = section.get_list('tags')
+    def configure(self, uri, systemtype, metadata, policy):
+        self._uri = uri
+        self._systemtype = systemtype
+        self._metadata = metadata
+        self._policy = policy
 
-    def set_id(self, objectid):
-        if self._objectid is not None:
-            raise AttributeError("id is already set")
-        self._objectid = objectid
-
-    def get_id(self):
-        return self._objectid
-
-    id = property(get_id, set_id)
+    def get_uri(self):
+        return self._uri
 
     def get_type(self):
-        return self._objecttype
-
-    @property
-    def type(self):
-        return self.get_type()
+        return self._systemtype
 
     def get_metadata(self):
-        metadata = {}
-        if self.name is not None:
-            metadata['prettyName'] = self.name
-        if self.name is not None:
-            metadata['description'] = self.description
-        return metadata
+        return self._metadata
 
-    @property
-    def metadata(self):
-        return self.get_metadata()
+    def get_policy(self):
+        return self._policy
 
-    def describe(self):
-        raise NotImplementedError()
+    def get_probe(self, name):
+        return self._probes[name]
 
+    def set_probe(self, name, probe):
+        self._probes[name] = probe
+
+    def iter_probes(self):
+        return self._probes.iteritems()

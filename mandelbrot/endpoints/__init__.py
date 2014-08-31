@@ -19,17 +19,35 @@ from zope.interface import Interface, implements
 
 class IEndpoint(Interface):
 
-    def configure(self, section):
+    def configure(self, endpoint, settings):
         ""
 
     def send(self, message):
         ""
 
-class Endpoint(object):
-    implements(IEndpoint)
+    def register(self, uri, registration):
+        ""
 
-    def configure(self, section):
+    def update(self, uri, registration):
+        ""
+
+    def unregister(self, uri):
+        ""
+ 
+class Endpoint(object):
+    """
+    """
+    def configure(self, endpoint, settings):
         pass
 
-    def send(self, message):
-        raise NotImplementedError()
+class ResourceConflict(Exception):
+    """
+    """
+
+class ResourceNotFound(Exception):
+    """
+    """
+
+class EndpointError(Exception):
+    """
+    """

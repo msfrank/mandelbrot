@@ -15,17 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, psutil
 from mandelbrot.probes import AggregateProbe
-from mandelbrot.evaluation import Evaluation, Health
-from mandelbrot.table import size2string
 
 class Aggregate(AggregateProbe):
     """
     Check aggregate health of all direct children.
     """
-    def get_type(self):
-        return "io.mandelbrot.probe.Aggregate"
-
     def probe(self):
-        return ()
+        raise NotImplementedError()

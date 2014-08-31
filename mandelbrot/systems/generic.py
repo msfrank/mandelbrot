@@ -21,9 +21,10 @@ from mandelbrot.systems import System
 class GenericHost(System):
     """
     """
-    def get_metadata(self):
+    def configure(self, systemtype, settings, metadata, policy):
+        uri = settings.get_str("uri", "fqdn:" + socket.getfqdn())
         system, node, release, version, machine, processor = platform.uname()
-        host_metadata = {
+        _metadata = {
             'unameSystem': system,
             'unameNode': node,
             'unameRelease': release,
@@ -33,35 +34,27 @@ class GenericHost(System):
         }
         if system.lower() == 'linux':
             distname,version,id = platform.linux_distribution()
-            host_metadata['linuxDistname'] = distname
-            host_metadata['linuxDistversion'] = version
-            host_metadata['linuxDistId'] = id
+            _metadata['linuxDistname'] = distname
+            _metadata['linuxDistversion'] = version
+            _metadata['linuxDistId'] = id
         if system.lower() == 'darwin':
             release, versioninfo, machine = platform.mac_ver()
-            host_metadata['appleRelease'] = release
-            host_metadata['appleMachine'] = machine
+            _metadata['appleRelease'] = release
+            _metadata['appleMachine'] = machine
             if versioninfo != '':
                 version, dev_stage, non_release_version = versioninfo
-                host_metadata['appleVersion'] = version
-                host_metadata['appleDevstage'] = dev_stage
-                host_metadata['appleNonReleaseVersion'] = non_release_version
+                _metadata['appleVersion'] = version
+                _metadata['appleDevstage'] = dev_stage
+                _metadata['appleNonReleaseVersion'] = non_release_version
         if system.lower() == 'windows':
             release, version, csd, ptype = platform.win32_ver
-            host_metadata['windowsRelease'] = release
-            host_metadata['windowsVersion'] = version
-            host_metadata['windowsCSD'] = csd
-            host_metadata['windowsPtype'] = ptype
+            _metadata['windowsRelease'] = release
+            _metadata['windowsVersion'] = version
+            _metadata['windowsCSD'] = csd
+            _metadata['windowsPtype'] = ptype
         if system.lower() == 'java':
             pass
         else:
             pass
-        metadata = System.get_metadata(self)
-        metadata.update(host_metadata)
-        return metadata
-
-    def configure(self, section):
-        System.configure(self, section)
-        self.set_id("fqdn:" + socket.getfqdn())
-
-    def describe(self):
-        return None
+        _metadata.update(metadata)
+        System.configure(self, uri, systemtype, _metadata, policy)

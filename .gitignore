@@ -2,6 +2,7 @@
 *.idea_modules
 *.iml
 *.pyc
+*.swp
 *.egg-info
 mandelbrot.conf
 dist

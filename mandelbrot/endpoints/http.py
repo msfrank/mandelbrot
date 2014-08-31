@@ -16,9 +16,10 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import urlparse
+from twisted.internet.defer import Deferred
 from twisted.web.http_headers import Headers
-from mandelbrot.endpoints import Endpoint
-from mandelbrot.message import Message, MandelbrotMessage
+from mandelbrot.endpoints import *
+from mandelbrot.message import ProbeMessage
 from mandelbrot.http import http, as_json
 from mandelbrot.loggers import getLogger
 from mandelbrot import versionstring
@@ -30,22 +31,95 @@ class HTTPEndpoint(Endpoint):
     """
     def __init__(self):
         Endpoint.__init__(self)
-        self.agent = None
+        self._agent = None
+        self.endpoint = None
 
-    def configure(self, section):
-        self.endpoint = section.get_str("endpoint url")
-        Endpoint.configure(self, section)
+    def configure(self, endpoint, section):
+        self.endpoint = endpoint
+        Endpoint.configure(self, endpoint, section)
+
+    @property
+    def agent(self):
+        if self._agent is None:
+            self._agent = http.agent()
+        return self._agent
+
+    @property
+    def headers(self):
+        return Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
 
     def send(self, message):
-        if self.agent is None:
-            self.agent = http.agent()
-        if isinstance(message, MandelbrotMessage):
+        if isinstance(message, ProbeMessage):
             uri = message.source.split('/')[0]
             url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri + '/actions/submit')
-            headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
-            defer = self.agent.request('POST', url, headers, as_json(message))
+            defer = self.agent.request('POST', url, self.headers, as_json(message))
             logger.debug("sending message to %s", url)
-            defer.addErrback(self.onfailure)
+            defer.addErrback(self.on_failure)
 
-    def onfailure(self, failure):
+    def on_failure(self, failure):
         logger.debug("failed to send message: %s", failure.getErrorMessage())
+
+    def register(self, uri, registration):
+        """
+        """
+        from twisted.internet import reactor
+        result = Deferred()
+        # callbacks
+        def on_response(response):
+            if isinstance(response, Failure):
+                result.errback(response)
+            else:
+                logger.debug("registration returned %i: %s", response.code, response.phrase)
+                # registration accepted
+                if response.code == 202:
+                    result.callback(uri)
+                # conflicts with existing system
+                elif response.code == 409:
+                    result.errback(ResourceConflict())
+                # unknown error, fail fast and loud
+                else:
+                    def read_failure(body):
+                        logger.debug("HTTP response entity was:\n----\n" + body + "\n----")
+                        result.errback(EndpointError("registration encountered a fatal error"))
+                    http.read_body(response).addCallback(read_failure)
+        url = urlparse.urljoin(self.endpoint, 'objects/systems')
+        defer = self.agent.request('POST', url, headers, as_json({'uri': uri, 'registration': registration})) 
+        defer.addBoth(on_response)
+        logger.info("registering system %s", uri)
+        logger.debug("%s %s", method, url)
+        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
+        return result
+
+    def update(self, uri, registration):
+        """
+        """
+        from twisted.internet import reactor
+        result = Deferred()
+        # callbacks
+        def on_response(response):
+            if isinstance(response, Failure):
+                result.errback(response)
+            else:
+                logger.debug("registration returned %i: %s", response.code, response.phrase)
+                # registration accepted
+                if response.code == 202:
+                    result.callback(uri)
+                # system doesn't exist
+                elif response.code == 404:
+                    result.callback(ResourceNotFound())
+                # unknown error, fail fast and loud
+                else:
+                    def read_failure(body):
+                        logger.debug("HTTP response entity was:\n----\n" + body + "\n----")
+                        result.errback(EndpointError("registration encountered a fatal error"))
+                    http.read_body(response).addCallback(read_failure)
+        url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri)
+        defer = self.agent.request('PUT', url, headers, as_json({'uri': uri, 'registration': registration})) 
+        defer.addBoth(on_response)
+        logger.info("updating system %s", uri)
+        logger.debug("%s %s", method, url)
+        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
+        return result
+
+    def unregister(self, uri):
+        raise NotImplementedError()

@@ -16,6 +16,7 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys, Queue, urlparse, pprint, datetime
+import pwd, grp
 from twisted.application.service import MultiService
 from twisted.web.http_headers import Headers
 from twisted.python.failure import Failure
@@ -24,12 +25,10 @@ from daemon.pidfile import TimeoutPIDLockFile
 from setproctitle import setproctitle
 
 from mandelbrot.plugin import PluginManager
-from mandelbrot.agent.state import StateDatabase
-from mandelbrot.agent.inventory import InventoryDatabase
-from mandelbrot.agent.probes import ProbeScheduler, timedelta_to_seconds
+from mandelbrot.agent.registry import RegistryService
+from mandelbrot.agent.scheduler import SchedulerService
 from mandelbrot.agent.endpoints import EndpointWriter
 from mandelbrot.agent.xmlrpc import XMLRPCService
-from mandelbrot.http import http, as_json, from_json
 from mandelbrot.loggers import getLogger, startLogging, StdoutHandler, DEBUG
 from mandelbrot.defaults import defaults
 from mandelbrot import versionstring
@@ -49,23 +48,29 @@ class Agent(MultiService):
         section = ns.get_section("agent")
         self.plugins = PluginManager()
         self.plugins.configure(section)
-        # configure registration
-        self.maxattempts = section.get_int("max registration attempts", None)
-        self.attemptwait = timedelta_to_seconds(section.get_timedelta("registration attempt delay", datetime.timedelta(minutes=5)))
-        # configure the state db
-        path = section.get_path("state directory", defaults.get("LOCALSTATE_DIR"))
-        self.state = StateDatabase(os.path.join(path, "agent"))
-        # load the inventory
-        self.inventory = InventoryDatabase(self.plugins, self.state)
-        self.inventory.configure(ns)
-        # get agent process configuration
+        # configure endpoint
+        self.scheduler = SchedulerService()
+        self.scheduler.configure(ns)
+        self.addService(self.scheduler)
+        # configure endpoint
+        self.endpoint = EndpointWriter(self.plugins)
+        self.endpoint.configure(ns)
+        self.addService(self.endpoint)
+        # configure registry
+        self.registry = RegistryService(self.plugins, self.scheduler, self.endpoint)
+        self.registry.configure(ns)
+        self.addService(self.registry)
+        # configure xmlrpc
+        self.xmlrpc = XMLRPCService(self)
+        self.xmlrpc.configure(ns)
+        self.addService(self.xmlrpc)
+        # configure agent process
         self.foreground = section.get_bool("foreground", False)
         self.pidfile = section.get_path("pid file", os.path.join(defaults.get("RUN_DIR"), "agent.pid"))
         name = section.get_str("runtime user")
         if name is None:
             self.uid = None
         else:
-            import pwd
             try:
                 self.uid = pwd.getpwnam(name).pw_uid
             except:
@@ -75,30 +80,11 @@ class Agent(MultiService):
         if name is None:
             self.gid = None
         else:
-            import grp
             try:
                 self.gid = grp.getrgnam(name).gr_gid
             except:
                 logger.warning("failed to get gid for runtime group %s", name)
                 self.gid = None
-        # get supervisor configuration
-        self.supervisor = section.get_str("supervisor url", ns.get_section('supervisor').get_str('supervisor url'))
-        # create the internal agent queue
-        queuesize = section.get_int("agent queue size", 4096)
-        self.queue = Queue.Queue(maxsize=queuesize)
-        logger.debug("created agent queue with size %i", queuesize)
-        # configure probes
-        self.probes = ProbeScheduler(self.inventory, self.queue)
-        self.addService(self.probes)
-        self.probes.configure(ns)
-        # configure endpoints
-        self.endpoints = EndpointWriter(self.plugins, self.queue)
-        self.addService(self.endpoints)
-        self.endpoints.configure(ns)
-        # configure xmlrpc
-        self.xmlrpc = XMLRPCService(self)
-        self.addService(self.xmlrpc)
-        self.xmlrpc.configure(ns)
         # configure logging
         logconfigfile = section.get_path('log config file', "%s.logconfig" % ns.appname)
         if section.get_bool("debug", False):
@@ -106,70 +92,12 @@ class Agent(MultiService):
         else:
             startLogging(None)
 
-    def startService(self):
-        from twisted.internet import reactor
-        self.agent = http.agent()
-        headers = Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
-        registration = {'uri': self.inventory.uri, 'registration': self.inventory.registration} 
-        # callbacks
-        def on_retry(method, url, attempt):
-            logger.debug("%s %s", method, url)
-            defer = self.agent.request(method, url, headers, as_json(registration))
-            defer.addBoth(on_response, method, url, attempt)
-        def on_response(response, method, url, attempt):
-            if isinstance(response, Failure):
-                logger.error("registration attempt %i failed: %s", attempt, response.getErrorMessage())
-                register(method, url, attempt + 1, self.attemptwait)
-            else:
-                logger.debug("registration attempt %i returned %i: %s", attempt, response.code, response.phrase)
-                # registration accepted
-                if response.code == 202:
-                    self.state.put('uri', self.inventory.uri)
-                    MultiService.startService(self)
-                # system not found
-                elif response.code == 404:
-                    method = 'POST'
-                    url = urlparse.urljoin(self.supervisor, 'objects/systems')
-                    register(method, url, attempt + 1)
-                # conflicts with existing system
-                elif response.code == 409:
-                    reactor.stop()
-                # unknown error, fail fast and loud
-                else:
-                    def read_failure(body):
-                        logger.error("registration encountered a fatal error")
-                        logger.debug("HTTP response entity was:\n----\n" + body + "\n----")
-                        reactor.stop()
-                    http.read_body(response).addCallback(read_failure)
-        def register(method, url, attempt, delay=None):
-            if self.maxattempts is None or attempt <= self.maxattempts:
-                if delay is not None:
-                    reactor.callLater(self.attemptwait, on_retry, method, url, attempt)
-                    logger.debug("retrying registration in %i seconds", delay)
-                else:
-                    on_retry(method, url, attempt)
-            else:
-                reactor.stop()
-        # if we have previously stored uri as state, then use a PUT request
-        if self.inventory.uri == self.state.get('uri'):
-            logger.info("found cached system %s", self.state.get('uri'))
-            method = 'PUT'
-            url = urlparse.urljoin(self.supervisor, 'objects/systems/' + self.inventory.uri)
-        # otherwise if this is a new registration, use a POST request
-        else:
-            method = 'POST'
-            url = urlparse.urljoin(self.supervisor, 'objects/systems')
-        logger.info("registering system %s with supervisor %s", registration['uri'], self.supervisor)
-        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
-        # start the first attempt
-        register(method, url, 1)
-
     def run(self):
         logger.info("-- starting mandelbrot agent --")
         # execute any privileged subsystem code
         self.privilegedStartService()
         # set the process title
-        setproctitle("mandelbrot-agent [%s]" % self.inventory.root.get_id())
+        setproctitle("mandelbrot-agent")
         # construct the daemon context
         daemon = DaemonContext()
         daemon.prevent_core = True

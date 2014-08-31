@@ -19,6 +19,7 @@ import collections, time
 from tabulate import tabulate
 
 from mandelbrot.ref import parse_proberef
+from mandelbrot.convert import *
 
 def sort_results(results, sortfields, converters=None):
     """
@@ -102,43 +103,3 @@ def render_table(results, expand=True, columns=None, renderers=None, tablefmt='s
 
     # render the table
     return tabulate(table, headers, tablefmt)
-
-def millis2ctime(millis):
-    return time.ctime(millis / 1000.0)
-
-def bool2checkbox(value):
-    if value is False or value is None:
-        return ""
-    return "*"
-
-def bool2string(value):
-    if value is False or value is None:
-        return "false"
-    return "true"
-
-def proberef2path(value):
-    try:
-        ref = parse_proberef(value)
-        return ref.path
-    except:
-        return ""
-
-def size2string(size):
-    if size < 1024:
-        return "%i bytes" % size
-    if size < 1024 * 1024:
-        return "%.1f kilobytes" % (float(size) / 1024.0)
-    if size < 1024 * 1024 * 1024:
-        return "%.1f megabytes" % (float(size) / (1024.0 * 1024.0))
-    if size < 1024 * 1024 * 1024 * 1024:
-        return "%.1f gigabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0))
-    if size < 1024 * 1024 * 1024 * 1024 * 1024:
-        return "%.1f terabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0))
-    if size < 1024 * 1024 * 1024 * 1024 * 1024 * 1024:
-        return "%.1f petabytes" % (float(size) / (1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0))
-
-def list2csv(values):
-    return ", ".join(values)
-
-def list2nsv(values):
-    return "\n".join(values)

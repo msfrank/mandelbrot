@@ -28,6 +28,7 @@ setup(
     install_requires=[
         'zope.interface',
         'twisted >= 13.2.0',
+        'PyYAML >= 3.11',
         'pesky-settings >= 0.0.4',
         'pesky-defaults >= 0.0.2',
         'psutil >= 2.1.0',
@@ -68,6 +69,11 @@ setup(
         'io.mandelbrot.endpoint': [
             'io.mandelbrot.endpoint.DummyEndpoint=mandelbrot.endpoints.dummy:DummyEndpoint',
             'io.mandelbrot.endpoint.HTTPEndpoint=mandelbrot.endpoints.http:HTTPEndpoint',
+            ],
+        'io.mandelbrot.endpoint.scheme': [
+            'dummy=mandelbrot.endpoints.dummy:DummyEndpoint',
+            'http=mandelbrot.endpoints.http:HTTPEndpoint',
+            'https=mandelbrot.endpoints.http:HTTPEndpoint',
             ],
         'io.mandelbrot.probe': [
             'io.mandelbrot.probe.SystemLoad=mandelbrot.probes.system:SystemLoad',
