@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
+import pprint
 from twisted.internet.defer import succeed
 from mandelbrot.endpoints import Endpoint
 from mandelbrot.loggers import getLogger
@@ -31,11 +32,11 @@ class DummyEndpoint(Endpoint):
         logger.debug("received message: %s", message)
 
     def register(self, uri, registration):
-        logger.debug("registering uri %s using registration %s", uri, registration)
+        logger.debug("registering uri %s using registration:\n%s", uri, pprint.pformat(registration))
         return succeed(uri)
 
     def update(self, uri, registration):
-        logger.debug("updating uri %s using registration %s", uri, registration)
+        logger.debug("updating uri %s using registration:\n%s", uri, pprint.pformat(registration))
         return succeed(uri)
 
     def unregister(self, uri):

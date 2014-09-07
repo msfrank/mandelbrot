@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import urlparse
+import urlparse, pprint
 from twisted.internet.defer import Deferred
+from twisted.python.failure import Failure
 from twisted.web.http_headers import Headers
 from mandelbrot.endpoints import *
 from mandelbrot.message import ProbeMessage
@@ -83,10 +84,10 @@ class HTTPEndpoint(Endpoint):
                         result.errback(EndpointError("registration encountered a fatal error"))
                     http.read_body(response).addCallback(read_failure)
         url = urlparse.urljoin(self.endpoint, 'objects/systems')
-        defer = self.agent.request('POST', url, headers, as_json({'uri': uri, 'registration': registration})) 
+        defer = self.agent.request('POST', url, self.headers, as_json({'uri': uri, 'registration': registration})) 
         defer.addBoth(on_response)
         logger.info("registering system %s", uri)
-        logger.debug("%s %s", method, url)
+        logger.debug("POST %s", url)
         logger.debug("submitting registration:\n%s", pprint.pformat(registration))
         return result
 
@@ -114,10 +115,10 @@ class HTTPEndpoint(Endpoint):
                         result.errback(EndpointError("registration encountered a fatal error"))
                     http.read_body(response).addCallback(read_failure)
         url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri)
-        defer = self.agent.request('PUT', url, headers, as_json({'uri': uri, 'registration': registration})) 
+        defer = self.agent.request('PUT', url, self.headers, as_json({'uri': uri, 'registration': registration})) 
         defer.addBoth(on_response)
         logger.info("updating system %s", uri)
-        logger.debug("%s %s", method, url)
+        logger.debug("PUT %s", url)
         logger.debug("submitting registration:\n%s", pprint.pformat(registration))
         return result
 

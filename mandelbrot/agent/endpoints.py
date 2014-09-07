@@ -51,10 +51,11 @@ class EndpointWriter(MultiService):
                 self.endpoint = self.plugins.newinstance('io.mandelbrot.endpoint.scheme', url.scheme)
             except PluginError, e:
                 raise ConfigureError("unknown endpoint scheme %s" % url.scheme)
-        try:
-            self.endpoint = self.plugins.newinstance('io.mandelbrot.endpoint', endpointtype)
-        except PluginError, e:
-                raise ConfigureError("unknown endpoint type %s" % endpointtype)
+        else:
+            try:
+                self.endpoint = self.plugins.newinstance('io.mandelbrot.endpoint', endpointtype)
+            except PluginError, e:
+                    raise ConfigureError("unknown endpoint type %s" % endpointtype)
         section = ns.get_section('endpoint')
         self.endpoint.configure(self.supervisor, section)
         logger.debug("configured endpoint %s", self.supervisor)
