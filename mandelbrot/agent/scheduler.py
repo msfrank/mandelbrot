@@ -20,6 +20,7 @@ from twisted.internet.task import LoopingCall
 from twisted.application.service import Service
 from pesky.settings import ConfigureError
 from mandelbrot.evaluation import Evaluation
+from mandelbrot.ref import parse_proberef
 from mandelbrot.message import StatusMessage, MetricsMessage
 from mandelbrot.convert import timedelta2seconds
 from mandelbrot.loggers import getLogger
@@ -44,19 +45,19 @@ class SchedulerService(Service):
     def schedule(self, system, queue):
         """
         """
+        from twisted.internet import reactor
+        logger.info("scheduling system %s", system.get_uri())
         runners = dict()
         def _schedule(probes):
             for probe in probes:
                 try:
-                    ref = system.get_uri() + probe.get_path()
+                    ref = parse_proberef(system.get_uri() + '/' + probe.get_path())
                     runner = ProbeRunner(ref, probe, self.interval, self.splay, queue)
                     runners[probe.get_path()] = runner
                     _schedule(map(lambda item: item[1], probe.iter_probes()))
                 except Exception, e:
                     logger.warning("ignoring probe %s: %s", probe.get_path, str(e))
-        logger.info("scheduling system %s", system.get_uri())
         _schedule(map(lambda item: item[1], system.iter_probes()))
-        from twisted.internet import reactor
         for path,runner in runners.items():
             splay = random.uniform(0.1, timedelta2seconds(runner.splay))
             logger.debug("scheduling probe %s with splay %s", path, datetime.timedelta(seconds=splay))

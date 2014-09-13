@@ -21,6 +21,7 @@ from twisted.application.service import Service
 from mandelbrot.agent.systemfile import parse_systemdir, parse_systemfile
 from mandelbrot.agent.state import StateDatabase
 from mandelbrot.policy import Policy
+from mandelbrot.registration import SystemRegistration
 from mandelbrot.endpoints import ResourceNotFound, ResourceConflict
 from mandelbrot.convert import timedelta2seconds
 from mandelbrot.defaults import defaults
@@ -47,7 +48,7 @@ class RegistryService(Service):
         section = ns.get_section('agent')
         # configure registration params
         self.maxattempts = section.get_int("max registration attempts", None)
-        self.attemptwait = timedelta2seconds(section.get_timedelta("registration attempt delay", datetime.timedelta(minutes=5)))
+        self.attemptdelay = timedelta2seconds(section.get_timedelta("registration attempt delay", datetime.timedelta(minutes=5)))
         # configure default probe policy
         joining_timeout = section.get_timedelta("joining timeout", datetime.timedelta(minutes=10))
         probe_timeout = section.get_timedelta("probe timeout", datetime.timedelta(minutes=10))
@@ -96,22 +97,6 @@ class RegistryService(Service):
         logger.debug("configured system %s", system.get_uri())
         return system
 
-    def make_registration(self, system):
-        """
-        Given an instantiated probe system, return the registration.
-        """
-        def make_spec(probe):
-            probes = {}
-            for name,child in probe.iter_probes():
-                probes[name] = make_spec(child)
-            policy = probe.get_policy().to_spec()
-            behavior = probe.get_behavior().to_spec()
-            return {'probeType': probe.get_type(), 'metadata': probe.get_metadata(), 'policy': policy, 'behavior': behavior, 'children': probes}
-        probes = {}
-        for name,child in system.iter_probes():
-            probes[name] = make_spec(child)
-        return {'systemType': system.get_type(), 'metadata': system.get_metadata(), 'probes': probes}
-
     def startService(self):
         """
         """
@@ -119,27 +104,30 @@ class RegistryService(Service):
         from twisted.internet import reactor
         logger.debug("performing initial registration")
         for uri,system in self.known.items():
-            defer = self.endpoint.update(uri, self.make_registration(system))
+            registration = SystemRegistration(system)
+            defer = self.endpoint.update(uri, registration)
             def on_registered(_uri):
+                logger.debug("registered system %s", _uri)
                 _system = self.known.pop(_uri)
                 self.scheduler.schedule(system, self.endpoint.get_queue())
                 self.registered[_uri] = _system
-            def on_retry(failure, _uri, _system, attemptsleft):
+            def on_retry(failure, _uri, _registration, attemptsleft):
                 if isinstance(failure.value, ResourceNotFound):
-                    _defer = self.endpoint.register(_uri, self.make_registration(_system))
+                    _defer = self.endpoint.register(_uri, registration)
                 else:
-                    _defer = self.endpoint.update(_uri, self.make_registration(_system))
+                    _defer = self.endpoint.update(_uri, registration)
                 _defer.addCallback(on_registered)
-                _defer.addErrback(on_failure, _uri, _system, attemptsleft)
-            def on_failure(failure, _uri, _system, attemptsleft):
+                _defer.addErrback(on_failure, _uri, _registration, attemptsleft)
+            def on_failure(failure, _uri, _registration, attemptsleft):
                 if attemptsleft == 0:
-                    logger.info("gave up registering %s after failing %i times", _uri, self.maxattempts)
+                    logger.info("gave up registering system %s after failing %i times", _uri, self.maxattempts)
                 elif isinstance(failure.value, ResourceNotFound) or isinstance(failure.value, ResourceConflict):
-                    reactor.callLater(self.attemptdelay, on_retry, _uri, _system, attemptsleft - 1)
+                    logger.info("retrying registering system %s in %i seconds", _uri, self.attemptdelay)
+                    reactor.callLater(self.attemptdelay, on_retry, failure, _uri, _registration, attemptsleft - 1)
                 else:
-                    logger.error("gave up registering %s after fatal error: %s", _uri, failure.getErrorMessage())
+                    logger.error("gave up registering system %s after fatal error: %s", _uri, failure.getErrorMessage())
             defer.addCallback(on_registered)
-            defer.addErrback(on_failure, uri, system, self.maxattempts)
+            defer.addErrback(on_failure, uri, registration, self.maxattempts)
 
     def stopService(self):
         """

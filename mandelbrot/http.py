@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
-import json, datetime
+import json, datetime, time, pprint
 from zope.interface import implements
 from twisted.internet.defer import succeed
 from twisted.web.iweb import IBodyProducer
@@ -31,6 +31,9 @@ class JSONEncoder(json.JSONEncoder):
     Upgraded json encoder which can dump extra data types such as timedelta.
     """
     def default(self, o):
+        if isinstance(o, datetime.datetime):
+            seconds = time.mktime(o.utctimetuple())
+            return long(seconds * 1000)
         if isinstance(o, datetime.timedelta):
             seconds = (float(o.microseconds) + (float(o.seconds) + float(o.days) * 24.0 * 3600.0) * 10**6) / 10**6
             return long(seconds * 1000)
@@ -44,8 +47,9 @@ def as_json(data):
     """
     class JsonProducer(object):
         implements(IBodyProducer)
-        def __init__(self, body):
-            self.entity = json_encoder.encode(body)
+        def __init__(self, data):
+            logger.debug("entity:\n%s", pprint.pformat(data))
+            self.entity = json_encoder.encode(data)
             self.length = len(self.entity)
         def startProducing(self, consumer):
             consumer.write(self.entity)

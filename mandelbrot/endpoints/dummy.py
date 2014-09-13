@@ -32,11 +32,11 @@ class DummyEndpoint(Endpoint):
         logger.debug("received message: %s", message)
 
     def register(self, uri, registration):
-        logger.debug("registering uri %s using registration:\n%s", uri, pprint.pformat(registration))
+        logger.debug("registering uri %s using registration:\n%s", uri, registration)
         return succeed(uri)
 
     def update(self, uri, registration):
-        logger.debug("updating uri %s using registration:\n%s", uri, pprint.pformat(registration))
+        logger.debug("updating uri %s using registration:\n%s", uri, registration)
         return succeed(uri)
 
     def unregister(self, uri):

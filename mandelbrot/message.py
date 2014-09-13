@@ -16,6 +16,7 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import json, pprint
+from mandelbrot.ref import ProbeRef
 
 class Message(object):
     """
@@ -34,11 +35,13 @@ class ProbeMessage(Message):
     """
     def __init__(self, source, msgtype):
         Message.__init__(self, msgtype)
+        if not isinstance(source, ProbeRef):
+            raise TypeError("source must be a ProbeRef")
         self.source = source
 
     def __dump__(self):
         data = Message.__dump__(self)
-        data['payload'] = {'source': self.source}
+        data['payload'] = {'source': str(self.source)}
         return data
 
 class StatusMessage(ProbeMessage):

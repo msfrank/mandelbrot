@@ -84,7 +84,7 @@ class Policy(object):
                       leaving_timeout=leaving_timeout,
                       notifications=notifications)
 
-    def to_spec(self):
+    def __dump__(self):
         spec = dict()
         spec['joiningTimeout'] = self.joining_timeout
         spec['probeTimeout'] = self.probe_timeout
@@ -93,4 +93,3 @@ class Policy(object):
         if self.notifications is not None:
             spec['notifications'] = self.notifications
         return spec
-

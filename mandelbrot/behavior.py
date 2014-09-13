@@ -55,10 +55,10 @@ class ScalarBehavior(object):
         flap_deviations = override.flap_deviations if override.flap_deviations is not None else self.flap_deviations
         return ScalarBehavior(flap_window, flap_deviations)
 
-    def to_spec(self):
+    def __dump__(self):
         spec = dict()
         spec['behaviorType'] = "scalar"
-        spec['behaviorPolicy'] = {"flap_window": self.flap_window, "flap_deviations": self.flap_deviations}
+        spec['behaviorPolicy'] = {"flapWindow": self.flap_window, "flapDeviations": self.flap_deviations}
         return spec
 
 class OverrideAggregateBehavior(object):
@@ -85,10 +85,10 @@ class AggregateBehavior(object):
         flap_deviations = override.flap_deviations if override.flap_deviations is not None else self.flap_deviations
         return AggregateBehavior(flap_window, flap_deviations)
 
-    def to_spec(self):
+    def __dump__(self):
         spec = dict()
         spec['behaviorType'] = "aggregate"
-        spec['behaviorPolicy'] = {"flap_window": self.flap_window, "flap_deviations": self.flap_deviations}
+        spec['behaviorPolicy'] = {"flapWindow": self.flap_window, "flapDeviations": self.flap_deviations}
         return spec
 
 class OverrideMetricsBehavior(object):
@@ -115,8 +115,8 @@ class MetricsBehavior(object):
         flap_deviations = override.flap_deviations if override.flap_deviations is not None else self.flap_deviations
         return MetricsBehavior(flap_window, flap_deviations)
 
-    def to_spec(self):
+    def __dump__(self):
         spec = dict()
         spec['behaviorType'] = "metrics"
-        spec['behaviorPolicy'] = {"flap_window": self.flap_window, "flap_deviations": self.flap_deviations}
+        spec['behaviorPolicy'] = {"flapWindow": self.flap_window, "flapDeviations": self.flap_deviations}
         return spec

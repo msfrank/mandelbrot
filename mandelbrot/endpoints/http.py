@@ -51,7 +51,7 @@ class HTTPEndpoint(Endpoint):
 
     def send(self, message):
         if isinstance(message, ProbeMessage):
-            uri = message.source.split('/')[0]
+            uri = str(message.source.uri)
             url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri + '/actions/submit')
             defer = self.agent.request('POST', url, self.headers, as_json(message))
             logger.debug("sending message to %s", url)
@@ -84,11 +84,10 @@ class HTTPEndpoint(Endpoint):
                         result.errback(EndpointError("registration encountered a fatal error"))
                     http.read_body(response).addCallback(read_failure)
         url = urlparse.urljoin(self.endpoint, 'objects/systems')
-        defer = self.agent.request('POST', url, self.headers, as_json({'uri': uri, 'registration': registration})) 
-        defer.addBoth(on_response)
         logger.info("registering system %s", uri)
         logger.debug("POST %s", url)
-        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
+        defer = self.agent.request('POST', url, self.headers, as_json({'uri': uri, 'registration': registration.__dump__()})) 
+        defer.addBoth(on_response)
         return result
 
     def update(self, uri, registration):
@@ -107,7 +106,7 @@ class HTTPEndpoint(Endpoint):
                     result.callback(uri)
                 # system doesn't exist
                 elif response.code == 404:
-                    result.callback(ResourceNotFound())
+                    result.errback(ResourceNotFound())
                 # unknown error, fail fast and loud
                 else:
                     def read_failure(body):
@@ -115,11 +114,10 @@ class HTTPEndpoint(Endpoint):
                         result.errback(EndpointError("registration encountered a fatal error"))
                     http.read_body(response).addCallback(read_failure)
         url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri)
-        defer = self.agent.request('PUT', url, self.headers, as_json({'uri': uri, 'registration': registration})) 
-        defer.addBoth(on_response)
         logger.info("updating system %s", uri)
         logger.debug("PUT %s", url)
-        logger.debug("submitting registration:\n%s", pprint.pformat(registration))
+        defer = self.agent.request('PUT', url, self.headers, as_json({'uri': uri, 'registration': registration.__dump__()})) 
+        defer.addBoth(on_response)
         return result
 
     def unregister(self, uri):
