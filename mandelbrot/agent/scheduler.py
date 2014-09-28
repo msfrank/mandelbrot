@@ -51,7 +51,7 @@ class SchedulerService(Service):
         def _schedule(probes):
             for probe in probes:
                 try:
-                    ref = parse_proberef(system.get_uri() + '/' + probe.get_path())
+                    ref = parse_proberef(system.get_uri() + probe.get_path())
                     runner = ProbeRunner(ref, probe, self.interval, self.splay, queue)
                     runners[probe.get_path()] = runner
                     _schedule(map(lambda item: item[1], probe.iter_probes()))

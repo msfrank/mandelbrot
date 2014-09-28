@@ -33,9 +33,12 @@ class SystemRegistration(object):
         systemtype = self.system.get_type()
         metadata = self.system.get_metadata()
         probes = {}
-        for name,child in self.system.iter_probes():
-            probes[name] = ProbeRegistration(child).__dump__()
-        return {'systemType': self.system.get_type(), 'metadata': self.system.get_metadata(), 'probes': probes}
+        for name,probe in self.system.iter_probes():
+            probes[name] = ProbeRegistration(probe).__dump__()
+        metrics = {}
+        for source,metric in self.system.iter_metrics():
+            metrics[str(source)] = MetricRegistration(metric).__dump__()
+        return {'systemType': systemtype, 'metadata': metadata, 'probes': probes, 'metrics': metrics}
 
 class ProbeRegistration(object):
     """
@@ -62,3 +65,24 @@ class ProbeRegistration(object):
             children[name] = child.__dump__()
         return {'probeType': probetype, 'metadata': metadata, 'policy': policy, 'behavior': behavior, 'children': children}
 
+class MetricRegistration(object):
+    """
+    """
+    def __init__(self, metric):
+        self.metric = metric
+
+    def __repr__(self):
+        return str(self.__dump__())
+
+    def __str__(self):
+        return pprint.pformat(self.__dump__())
+
+    def __dump__(self):
+        values = {'sourceType': self.metric.sourcetype, 'metricUnit': self.metric.unit}
+        if self.metric.step is not None:
+            values['step'] = self.metric.step
+        if self.metric.heartbeat is not None:
+            values['heartbeat'] = self.metric.heartbeat
+        if self.metric.cf is not None:
+            values['cf'] = self.metric.cf
+        return values

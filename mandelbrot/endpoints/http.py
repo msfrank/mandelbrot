@@ -50,15 +50,18 @@ class HTTPEndpoint(Endpoint):
         return Headers({'Content-Type': ['application/json'], 'User-Agent': ['mandelbrot-agent/' + versionstring()]})
 
     def send(self, message):
-        if isinstance(message, ProbeMessage):
-            uri = str(message.source.uri)
-            url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri + '/actions/submit')
-            defer = self.agent.request('POST', url, self.headers, as_json(message))
-            logger.debug("sending message to %s", url)
-            defer.addErrback(self.on_failure)
-
-    def on_failure(self, failure):
-        logger.debug("failed to send message: %s", failure.getErrorMessage())
+        if not isinstance(message, ProbeMessage):
+            raise TypeError("message must be a ProbeMessage")
+        uri = str(message.source.uri)
+        url = urlparse.urljoin(self.endpoint, 'objects/systems/' + uri + '/actions/submit')
+        defer = self.agent.request('POST', url, self.headers, as_json(message))
+        logger.debug("sending message to %s", url)
+        def on_response(response):
+            if response.code != 200:
+                logger.debug("message was dropped by server: %i %s", response.code, response.phrase)
+        def on_failure(self, failure):
+            logger.debug("failed to send message: %s", failure.getErrorMessage())
+        defer.addCallbacks(on_response, on_failure)
 
     def register(self, uri, registration):
         """

@@ -51,6 +51,9 @@ class IProbe(Interface):
     def iter_probes(self):
         ""
 
+    def iter_metrics(self):
+        ""
+
     def is_synthetic(self):
         ""
 
@@ -66,12 +69,14 @@ class Probe(object):
         self._metadata = None
         self._policy = None
         self._probes = dict()
+        self._metrics = dict()
 
-    def configure(self, path, probetype, metadata, policy):
+    def configure(self, path, probetype, metadata, policy, metrics):
         self._path = path
         self._probetype = probetype
         self._metadata = metadata
         self._policy = policy
+        self._metrics = metrics
 
     def get_name(self):
         return self._path.split('/')[-1]
@@ -97,11 +102,14 @@ class Probe(object):
     def iter_probes(self):
         return self._probes.iteritems()
 
+    def iter_metrics(self):
+        return self._metrics.iteritems()
+
 class ScalarProbe(Probe):
     """
     """
-    def configure(self, path, probetype, settings, metadata, policy):
-        Probe.configure(self, path, probetype, metadata, policy)
+    def configure(self, path, probetype, settings, metadata, policy, metrics):
+        Probe.configure(self, path, probetype, metadata, policy, metrics)
 
     def get_behavior(self):
         return ScalarBehavior(0, 0)
@@ -129,8 +137,8 @@ class ScalarProbe(Probe):
 class AggregateProbe(Probe):
     """
     """
-    def configure(self, path, probetype, settings, metadata, policy):
-        Probe.configure(self, path, probetype, metadata, policy)
+    def configure(self, path, probetype, settings, metadata, policy, metrics):
+        Probe.configure(self, path, probetype, metadata, policy, metrics)
 
     def get_behavior(self):
         return AggregateBehavior(0, 0)
@@ -141,8 +149,8 @@ class AggregateProbe(Probe):
 class MetricsProbe(Probe):
     """
     """
-    def configure(self, path, probetype, settings, metadata, policy):
-        Probe.configure(self, path, probetype, metadata, policy)
+    def configure(self, path, probetype, settings, metadata, policy, metrics):
+        Probe.configure(self, path, probetype, metadata, policy, metrics)
 
     def get_behavior(self):
         return MetricsBehavior(0, 0)
@@ -152,4 +160,3 @@ class MetricsProbe(Probe):
 
     def evaluate(self, metrics, timestamp=None):
         return Evaluation(None, Metrics(metrics), timestamp=timestamp)
-

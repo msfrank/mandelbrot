@@ -21,6 +21,7 @@ from twisted.application.service import Service
 from mandelbrot.agent.systemfile import parse_systemdir, parse_systemfile
 from mandelbrot.agent.state import StateDatabase
 from mandelbrot.policy import Policy
+from mandelbrot.metric import MetricSource
 from mandelbrot.registration import SystemRegistration
 from mandelbrot.endpoints import ResourceNotFound, ResourceConflict
 from mandelbrot.convert import timedelta2seconds
@@ -86,6 +87,9 @@ class RegistryService(Service):
                     probe_policy = system_policy.parse(probespec.policy)
                     probe.configure(probespec.path, probespec.probetype, probespec.settings, probespec.metadata, probe_policy)
                     parent.set_probe(probename, probe)
+                    for name,metric in probe.iter_metrics():
+                        source = MetricSource(probespec.path, name)
+                        system.set_metric(source, metric)
                     make_probe(probespec.probes, probe)
                     logger.debug("configured probe %s", probespec.path)
                     return probe

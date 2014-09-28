@@ -16,7 +16,9 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, psutil
+from datetime import timedelta
 from mandelbrot.probes import ScalarProbe
+from mandelbrot.metric import Metric, SourceType, MetricUnit
 from mandelbrot.table import size2string
 
 class SystemLoad(ScalarProbe):
@@ -35,7 +37,11 @@ class SystemLoad(ScalarProbe):
         self.loaddegraded = settings.get_args("degraded threshold", float, float, float,
                 names=('LOAD1','LOAD5','LOAD15'), minimum=3, maximum=3)
         self.percpu = settings.get_bool("divide per cpu", False)
-        ScalarProbe.configure(self, path, probetype, settings, metadata, policy)
+        metrics = dict()
+        metrics['load1'] = Metric(SourceType.GAUGE, MetricUnit.UNITS)
+        metrics['load5'] = Metric(SourceType.GAUGE, MetricUnit.UNITS)
+        metrics['load15'] = Metric(SourceType.GAUGE, MetricUnit.UNITS)
+        ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         load1, load5, load15 = os.getloadavg()
@@ -82,7 +88,8 @@ class SystemCPU(ScalarProbe):
         self.iowaitfailed = settings.get_percent("iowait failed threshold", None)
         self.iowaitdegraded = settings.get_percent("iowait degraded threshold", None)
         self.extended = settings.get_bool("extended summary", False)
-        ScalarProbe.configure(self, path, probetype, settings, metadata, policy)
+        metrics = dict()
+        ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         times = psutil.cpu_times_percent()
@@ -121,7 +128,8 @@ class SystemMemory(ScalarProbe):
         self.memorydegraded = settings.get_size("memory degraded threshold", None)
         self.swapfailed = settings.get_size("swap failed threshold", None)
         self.swapdegraded = settings.get_size("swap degraded threshold", None)
-        ScalarProbe.configure(self, path, probetype, settings, metadata, policy)
+        metrics = dict()
+        ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         memory = psutil.virtual_memory()
@@ -154,7 +162,8 @@ class SystemDiskUsage(ScalarProbe):
         self.partition = settings.get_path("disk partition", "/")
         self.diskfailed = settings.get_size("disk failed threshold", None)
         self.diskdegraded = settings.get_size("disk degraded threshold", None)
-        ScalarProbe.configure(self, path, probetype, settings, metadata, policy)
+        metrics = dict()
+        ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         disk = psutil.disk_usage(self.partition)
@@ -184,7 +193,8 @@ class SystemDiskPerformance(ScalarProbe):
         self.readdegraded = settings.get_int("read degraded threshold", None)
         self.writefailed = settings.get_int("write failed threshold", None)
         self.writedegraded = settings.get_int("write degraded threshold", None)
-        ScalarProbe.configure(self, path, probetype, settings, metadata, policy)
+        metrics = dict()
+        ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         if self.device is not None:
@@ -227,7 +237,8 @@ class SystemNetPerformance(ScalarProbe):
         self.senddegraded = settings.get_int("send degraded threshold", None)
         self.recvfailed = settings.get_int("recv failed threshold", None)
         self.recvdegraded = settings.get_int("recv degraded threshold", None)
-        ScalarProbe.configure(self, path, probetype, settings, metadata, policy)
+        metrics = dict()
+        ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         if self.device is not None:

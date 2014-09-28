@@ -63,9 +63,9 @@ class MetricsMessage(ProbeMessage):
     """
     """
     def __init__(self, source, metrics, timestamp):
+        ProbeMessage.__init__(self, source, 'io.mandelbrot.message.MetricsMessage')
         self.metrics = metrics
         self.timestamp = timestamp
-        ProbeMessage.__init__(self, source, 'io.mandelbrot.message.MetricsMessage')
 
     def __dump__(self):
         data = ProbeMessage.__dump__(self)

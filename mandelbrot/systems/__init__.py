@@ -44,6 +44,15 @@ class ISystem(Interface):
     def iter_probes(self):
         ""
 
+    def get_metric(self, name):
+        ""
+
+    def set_metric(self, name, metric):
+        ""
+
+    def iter_metrics(self):
+        ""
+
     def describe(self):
         ""
 
@@ -56,6 +65,7 @@ class System(object):
         self._metadata = None
         self._policy = None
         self._probes = dict()
+        self._metrics = dict()
 
     def configure(self, uri, systemtype, metadata, policy):
         self._uri = uri
@@ -83,3 +93,12 @@ class System(object):
 
     def iter_probes(self):
         return self._probes.iteritems()
+
+    def get_metric(self, name):
+        return self._metrics[name]
+
+    def set_metric(self, source, metric):
+        self._metrics[source] = metric
+
+    def iter_metrics(self):
+        return self._metrics.iteritems()
