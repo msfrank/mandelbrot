@@ -23,7 +23,7 @@ from mandelbrot.agent.state import StateDatabase
 from mandelbrot.policy import Policy
 from mandelbrot.metric import MetricSource
 from mandelbrot.registration import SystemRegistration
-from mandelbrot.endpoints import ResourceNotFound, ResourceConflict
+from mandelbrot.endpoints import ResourceNotFound, ResourceConflict, RetryLater
 from mandelbrot.convert import timedelta2seconds
 from mandelbrot.defaults import defaults
 from mandelbrot.loggers import getLogger
@@ -92,7 +92,6 @@ class RegistryService(Service):
                         system.set_metric(source, metric)
                     make_probe(probespec.probes, probe)
                     logger.debug("configured probe %s", probespec.path)
-                    return probe
                 except ConfigureError, e:
                     raise
                 except Exception, e:
@@ -110,6 +109,7 @@ class RegistryService(Service):
         for uri,system in self.known.items():
             registration = SystemRegistration(system)
             defer = self.endpoint.update(uri, registration)
+            logger.debug("attempting to update existing system %s", uri)
             def on_registered(_uri):
                 logger.debug("registered system %s", _uri)
                 _system = self.known.pop(_uri)
@@ -117,8 +117,10 @@ class RegistryService(Service):
                 self.registered[_uri] = _system
             def on_retry(failure, _uri, _registration, attemptsleft):
                 if isinstance(failure.value, ResourceNotFound):
+                    logger.debug("attempting to register new system %s", uri)
                     _defer = self.endpoint.register(_uri, registration)
                 else:
+                    logger.debug("attempting to update existing system %s", uri)
                     _defer = self.endpoint.update(_uri, registration)
                 _defer.addCallback(on_registered)
                 _defer.addErrback(on_failure, _uri, _registration, attemptsleft)
@@ -126,6 +128,8 @@ class RegistryService(Service):
                 if attemptsleft == 0:
                     logger.info("gave up registering system %s after failing %i times", _uri, self.maxattempts)
                 elif isinstance(failure.value, ResourceNotFound) or isinstance(failure.value, ResourceConflict):
+                    reactor.callLater(0, on_retry, failure, _uri, _registration, attemptsleft - 1)
+                elif isinstance(failure.value, RetryLater):
                     logger.info("retrying registering system %s in %i seconds", _uri, self.attemptdelay)
                     reactor.callLater(self.attemptdelay, on_retry, failure, _uri, _registration, attemptsleft - 1)
                 else:

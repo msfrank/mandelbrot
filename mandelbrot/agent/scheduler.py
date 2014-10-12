@@ -51,12 +51,13 @@ class SchedulerService(Service):
         def _schedule(probes):
             for probe in probes:
                 try:
-                    ref = parse_proberef(system.get_uri() + probe.get_path())
-                    runner = ProbeRunner(ref, probe, self.interval, self.splay, queue)
-                    runners[probe.get_path()] = runner
+                    if not probe.is_synthetic():
+                        ref = parse_proberef(system.get_uri() + probe.get_path())
+                        runner = ProbeRunner(ref, probe, self.interval, self.splay, queue)
+                        runners[probe.get_path()] = runner
                     _schedule(map(lambda item: item[1], probe.iter_probes()))
                 except Exception, e:
-                    logger.warning("ignoring probe %s: %s", probe.get_path, str(e))
+                    logger.warning("failed to schedule probe %s: %s", probe.get_path, str(e))
         _schedule(map(lambda item: item[1], system.iter_probes()))
         for path,runner in runners.items():
             splay = random.uniform(0.1, timedelta2seconds(runner.splay))

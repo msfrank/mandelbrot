@@ -30,6 +30,8 @@ class MetricSource(object):
 
 class MetricUnit:
     UNITS = 'units'
+    OPS = 'operations'
+    PERCENT = 'percent'
     MINUTES = 'minutes'
     SECONDS = 'seconds'
     MILLISECONDS = 'milliseconds'

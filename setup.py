@@ -83,6 +83,7 @@ setup(
             'io.mandelbrot.probe.SystemDiskPerformance=mandelbrot.probes.system:SystemDiskPerformance',
             'io.mandelbrot.probe.SystemNetPerformance=mandelbrot.probes.system:SystemNetPerformance',
             'io.mandelbrot.probe.Aggregate=mandelbrot.probes.container:Aggregate',
+            'io.mandelbrot.probe.MetricsEvaluation=mandelbrot.probes.metrics:MetricsEvaluation',
             ],
         'io.mandelbrot.system': [
             'io.mandelbrot.system.GenericHost=mandelbrot.systems.generic:GenericHost',

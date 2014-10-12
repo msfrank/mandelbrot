@@ -141,7 +141,8 @@ class AggregateProbe(Probe):
         Probe.configure(self, path, probetype, metadata, policy, metrics)
 
     def get_behavior(self):
-        return AggregateBehavior(0, 0)
+        # implementation must return AggregateBehavior
+        raise NotImplementedError()
 
     def is_synthetic(self):
         return True
@@ -153,10 +154,8 @@ class MetricsProbe(Probe):
         Probe.configure(self, path, probetype, metadata, policy, metrics)
 
     def get_behavior(self):
-        return MetricsBehavior(0, 0)
+        # implementation must return MetricsBehavior
+        raise NotImplementedError()
 
     def is_synthetic(self):
-        return False
-
-    def evaluate(self, metrics, timestamp=None):
-        return Evaluation(None, Metrics(metrics), timestamp=timestamp)
+        return True

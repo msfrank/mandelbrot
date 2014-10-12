@@ -40,14 +40,35 @@ class Endpoint(object):
     def configure(self, endpoint, settings):
         pass
 
-class ResourceConflict(Exception):
-    """
-    """
-
-class ResourceNotFound(Exception):
-    """
-    """
-
 class EndpointError(Exception):
     """
     """
+
+class ResourceConflict(EndpointError):
+    """
+    """
+
+class ResourceNotFound(EndpointError):
+    """
+    """
+
+class RetryLater(EndpointError):
+    """
+    """
+
+class BadRequest(EndpointError):
+    """
+    """
+
+class Forbidden(EndpointError):
+    """
+    """
+
+class NotImplemented(EndpointError):
+    """
+    """
+
+class InternalError(EndpointError):
+    """
+    """
+

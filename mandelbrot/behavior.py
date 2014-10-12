@@ -93,30 +93,36 @@ class AggregateBehavior(object):
 
 class OverrideMetricsBehavior(object):
     def __init__(self, **kwargs):
+        self.evaluation = kwargs.get('evaluation', None)
         self.flap_window = kwargs.get('flap_window', None)
         self.flap_deviations = kwargs.get('flap_deviations', None)
 
     def merge(self, override):
+        evaluation = override.evaluation if override.evaluation is not None else self.evaluation
         flap_window = override.flap_window if override.flap_window is not None else self.flap_window
         flap_deviations = override.flap_deviations if override.flap_deviations is not None else self.flap_deviations
-        return OverridePolicy(flap_window=flap_window, flap_deviations=flap_deviations)
+        return OverridePolicy(evaluation=evaluation, flap_window=flap_window, flap_deviations=flap_deviations)
 
 class MetricsBehavior(object):
-    def __init__(self, flap_window, flap_deviations):
+    def __init__(self, evaluation, flap_window, flap_deviations):
+        if evaluation is None:
+            raise ValueError("evaluation cannot be None")
         if flap_window is None:
             raise ValueError("flap_window cannot be None")
         if flap_deviations is None:
             raise ValueError("flap_deviations cannot be None")
+        self.evaluation = evaluation
         self.flap_window = flap_window
         self.flap_deviations = flap_deviations
 
     def merge(self, override):
+        evaluation = override.evaluation if override.evaluation is not None else self.evaluation
         flap_window = override.flap_window if override.flap_window is not None else self.flap_window
         flap_deviations = override.flap_deviations if override.flap_deviations is not None else self.flap_deviations
-        return MetricsBehavior(flap_window, flap_deviations)
+        return MetricsBehavior(evaluation, flap_window, flap_deviations)
 
     def __dump__(self):
         spec = dict()
         spec['behaviorType'] = "metrics"
-        spec['behaviorPolicy'] = {"flapWindow": self.flap_window, "flapDeviations": self.flap_deviations}
+        spec['behaviorPolicy'] = {"evaluation": self.evaluation, "flapWindow": self.flap_window, "flapDeviations": self.flap_deviations}
         return spec

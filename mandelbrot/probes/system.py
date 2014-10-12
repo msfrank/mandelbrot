@@ -73,12 +73,12 @@ class SystemCPU(ScalarProbe):
     system degraded threshold = SYSTEM: percent
     iowait failed threshold   = IOWAIT: percent
     iowait degraded threshold = IOWAIT: percent
+    idle failed threshold     = IOWAIT: percent
+    idle degraded threshold   = IOWAIT: percent
     extended summary          = EXTENDED: bool = false
     """
     def __init__(self):
         ScalarProbe.__init__(self)
-        # throw away the first value
-        psutil.cpu_times_percent()
 
     def configure(self, path, probetype, settings, metadata, policy):
         self.userfailed = settings.get_percent("user failed threshold", None)
@@ -87,8 +87,13 @@ class SystemCPU(ScalarProbe):
         self.systemdegraded = settings.get_percent("system degraded threshold", None)
         self.iowaitfailed = settings.get_percent("iowait failed threshold", None)
         self.iowaitdegraded = settings.get_percent("iowait degraded threshold", None)
+        self.idlefailed = settings.get_percent("idle failed threshold", None)
+        self.idledegraded = settings.get_percent("idle degraded threshold", None)
         self.extended = settings.get_bool("extended summary", False)
         metrics = dict()
+        # has side effect of throwing away the first value
+        for name,_ in psutil.cpu_times_percent()._asdict().items():
+            metrics[name] = Metric(SourceType.GAUGE, MetricUnit.PERCENT)
         ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
@@ -99,19 +104,24 @@ class SystemCPU(ScalarProbe):
         else:
             showvals = ", ".join(["%.1f%% %s" % (v,n) for n,v in items])
         summary = "CPU utilization is " + showvals
+        metrics = dict(times._asdict().items())
         if self.userfailed is not None and times.user > self.userfailed:
-            return self.failed(summary)
+            return self.failed(summary, metrics)
         if self.systemfailed is not None and times.system > self.systemfailed:
-            return self.failed(summary)
+            return self.failed(summary, metrics)
         if self.iowaitfailed is not None and times.iowait > self.iowaitfailed:
-            return self.failed(summary)
+            return self.failed(summary, metrics)
         if self.userdegraded is not None and times.user > self.userdegraded:
-            return self.degraded(summary)
+            return self.degraded(summary, metrics)
         if self.systemdegraded is not None and times.system > self.systemdegraded:
-            return self.degraded(summary)
+            return self.degraded(summary, metrics)
         if self.iowaitdegraded is not None and times.iowait > self.iowaitdegraded:
-            return self.degraded(summary)
-        return self.healthy(summary)
+            return self.degraded(summary, metrics)
+        if self.idlefailed is not None and times.idle < self.idlefailed:
+            return self.failed(summary, metrics)
+        if self.idledegraded is not None and times.idle < self.idledegraded:
+            return self.degraded(summary, metrics)
+        return self.healthy(summary, metrics)
 
 class SystemMemory(ScalarProbe):
     """
@@ -129,25 +139,34 @@ class SystemMemory(ScalarProbe):
         self.swapfailed = settings.get_size("swap failed threshold", None)
         self.swapdegraded = settings.get_size("swap degraded threshold", None)
         metrics = dict()
+        metrics['memavail'] = Metric(SourceType.GAUGE, MetricUnit.BYTES)
+        metrics['memused'] = Metric(SourceType.GAUGE, MetricUnit.PERCENT)
+        metrics['memtotal'] = Metric(SourceType.GAUGE, MetricUnit.BYTES)
+        metrics['swapavail'] = Metric(SourceType.GAUGE, MetricUnit.BYTES)
+        metrics['swapused'] = Metric(SourceType.GAUGE, MetricUnit.PERCENT)
+        metrics['swaptotal'] = Metric(SourceType.GAUGE, MetricUnit.BYTES)
         ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         memory = psutil.virtual_memory()
+        memavail = memory.available
         memused = memory.percent
-        memtotal = size2string(memory.total)
+        memtotal = memory.total
         swap = psutil.swap_memory()
+        swapavail = swap.total - swap.used
         swapused = swap.percent
-        swaptotal = size2string(swap.total)
-        summary = "%.1f%% used of %s of physical memory; %.1f%% used of %s of swap" % (memused,memtotal,swapused,swaptotal)
+        swaptotal = swap.total
+        summary = "%.1f%% used of %s of physical memory; %.1f%% used of %s of swap" % (memused,size2string(memtotal),swapused,size2string(swaptotal))
+        metrics = dict(memavail=memavail, memused=memused, memtotal=memtotal, swapavail=swapavail, swapused=swapused, swaptotal=swaptotal)
         if self.memoryfailed is not None and memory.used > self.memoryfailed:
-            return self.failed(summary)
+            return self.failed(summary, metrics)
         if self.swapfailed is not None and swap.used > self.swapfailed:
-            return self.failed(summary)
+            return self.failed(summary, metrics)
         if self.memorydegraded is not None and memory.used > self.memorydegraded:
-            return self.degraded(summary)
+            return self.degraded(summary, metrics)
         if self.swapdegraded is not None and swap.used > self.swapdegraded:
-            return self.degraded(summary)
-        return self.healthy(summary)
+            return self.degraded(summary, metrics)
+        return self.healthy(summary, metrics)
 
 class SystemDiskUsage(ScalarProbe):
     """
@@ -163,18 +182,23 @@ class SystemDiskUsage(ScalarProbe):
         self.diskfailed = settings.get_size("disk failed threshold", None)
         self.diskdegraded = settings.get_size("disk degraded threshold", None)
         metrics = dict()
+        metrics['diskavail'] = Metric(SourceType.GAUGE, MetricUnit.BYTES)
+        metrics['diskused'] = Metric(SourceType.GAUGE, MetricUnit.PERCENT)
+        metrics['disktotal'] = Metric(SourceType.GAUGE, MetricUnit.BYTES)
         ScalarProbe.configure(self, path, probetype, settings, metadata, policy, metrics)
 
     def probe(self):
         disk = psutil.disk_usage(self.partition)
+        diskavail = disk.available
         diskused = disk.percent
         disktotal = size2string(disk.total)
         summary = "%.1f%% used of %s on %s" % (diskused,disktotal,self.partition)
+        metrics = dict(diskavail=diskavail, diskused=diskused, disktotal=disktotal)
         if self.diskfailed is not None and disk.used > self.diskfailed:
-            return self.failed(summary)
+            return self.failed(summary, metrics)
         if self.diskdegraded is not None and disk.used > self.diskdegraded:
-            return self.degraded(summary)
-        return self.healthy(summary)
+            return self.degraded(summary, metrics)
+        return self.healthy(summary, metrics)
 
 class SystemDiskPerformance(ScalarProbe):
     """
