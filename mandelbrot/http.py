@@ -42,22 +42,23 @@ class JSONEncoder(json.JSONEncoder):
 json_decoder = JSONDecoder()
 json_encoder = JSONEncoder()
 
+class JsonProducer(object):
+    implements(IBodyProducer)
+    def __init__(self, data):
+        #logger.debug("entity:\n%s", pprint.pformat(data))
+        self.entity = json_encoder.encode(data)
+        self.length = len(self.entity)
+    def startProducing(self, consumer):
+        consumer.write(self.entity)
+        return succeed(None)
+    def pauseProducing(self):
+        pass
+    def stopProducing(self):
+        pass
+
 def as_json(data):
     """
     """
-    class JsonProducer(object):
-        implements(IBodyProducer)
-        def __init__(self, data):
-            logger.debug("entity:\n%s", pprint.pformat(data))
-            self.entity = json_encoder.encode(data)
-            self.length = len(self.entity)
-        def startProducing(self, consumer):
-            consumer.write(self.entity)
-            return succeed(None)
-        def pauseProducing(self):
-            pass
-        def stopProducing(self):
-            pass
     if hasattr(data, '__dump__'):
         return JsonProducer(data.__dump__())
     return JsonProducer(data)
@@ -80,10 +81,11 @@ class Http(object):
 
     @property
     def pool(self):
+        return None
         from twisted.web.client import HTTPConnectionPool
         if self._pool is None:
             self._pool = HTTPConnectionPool(self.reactor)
-        return self._pool
+        #return self._pool
 
     @property
     def reactor(self):

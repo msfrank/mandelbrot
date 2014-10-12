@@ -59,7 +59,7 @@ class HTTPEndpoint(Endpoint):
         def on_response(response):
             if response.code != 200:
                 logger.debug("message was dropped by server: %i %s", response.code, response.phrase)
-        def on_failure(self, failure):
+        def on_failure(failure):
             logger.debug("failed to send message: %s", failure.getErrorMessage())
         defer.addCallbacks(on_response, on_failure)
 
@@ -70,6 +70,7 @@ class HTTPEndpoint(Endpoint):
         result = Deferred()
         # callbacks
         def on_response(response):
+            logger.debug("received response %s", response)
             if isinstance(response, Failure):
                 result.errback(response)
             else:
@@ -100,6 +101,7 @@ class HTTPEndpoint(Endpoint):
         result = Deferred()
         # callbacks
         def on_response(response):
+            logger.debug("received response %s", response)
             if isinstance(response, Failure):
                 result.errback(response)
             else:

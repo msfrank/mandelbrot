@@ -43,6 +43,7 @@ class RegistryService(Service):
         self.policy = None
         self.known = dict()
         self.registered = dict()
+        self.failed = dict()
         self.retiring = dict()
 
     def configure(self, ns):
@@ -100,6 +101,42 @@ class RegistryService(Service):
         logger.debug("configured system %s", system.get_uri())
         return system
 
+    def on_registered(self, uri):
+        logger.debug("registered system %s", uri)
+        system = self.known.pop(uri)
+        self.scheduler.schedule(system, self.endpoint.get_queue())
+        self.registered[uri] = system
+
+    def on_retry(self, failure, uri, registration, attemptsleft):
+        if isinstance(failure.value, ResourceNotFound):
+            logger.debug("attempting to register new system %s", uri)
+            defer = self.endpoint.register(uri, registration)
+        else:
+            logger.debug("attempting to update existing system %s", uri)
+            defer = self.endpoint.update(uri, registration)
+        defer.addCallback(self.on_registered)
+        defer.addErrback(self.on_failure, uri, registration, attemptsleft)
+
+    def on_failure(self, failure, uri, registration, attemptsleft):
+        from twisted.internet import reactor
+        if attemptsleft == 0:
+            logger.info("gave up registering system %s after failing %i times", uri, self.maxattempts)
+        elif isinstance(failure.value, ResourceNotFound) or isinstance(failure.value, ResourceConflict):
+            reactor.callLater(0, self.on_retry, failure, uri, registration, attemptsleft - 1)
+        elif isinstance(failure.value, RetryLater):
+            logger.info("retrying registering system %s in %i seconds", uri, self.attemptdelay)
+            reactor.callLater(self.attemptdelay, self.on_retry, failure, uri, registration, attemptsleft - 1)
+        else:
+            self.failed[uri] = self.known.pop(uri)
+            logger.error("gave up registering system %s after fatal error: %s", uri, failure.getErrorMessage())
+
+    def register_system(self, uri, system):
+        logger.debug("attempting to register new system %s", uri)
+        registration = SystemRegistration(system)
+        defer = self.endpoint.register(uri, registration)
+        defer.addCallback(self.on_registered)
+        defer.addErrback(self.on_failure, uri, registration, self.maxattempts)
+
     def startService(self):
         """
         """
@@ -107,35 +144,7 @@ class RegistryService(Service):
         from twisted.internet import reactor
         logger.debug("performing initial registration")
         for uri,system in self.known.items():
-            registration = SystemRegistration(system)
-            defer = self.endpoint.update(uri, registration)
-            logger.debug("attempting to update existing system %s", uri)
-            def on_registered(_uri):
-                logger.debug("registered system %s", _uri)
-                _system = self.known.pop(_uri)
-                self.scheduler.schedule(system, self.endpoint.get_queue())
-                self.registered[_uri] = _system
-            def on_retry(failure, _uri, _registration, attemptsleft):
-                if isinstance(failure.value, ResourceNotFound):
-                    logger.debug("attempting to register new system %s", uri)
-                    _defer = self.endpoint.register(_uri, registration)
-                else:
-                    logger.debug("attempting to update existing system %s", uri)
-                    _defer = self.endpoint.update(_uri, registration)
-                _defer.addCallback(on_registered)
-                _defer.addErrback(on_failure, _uri, _registration, attemptsleft)
-            def on_failure(failure, _uri, _registration, attemptsleft):
-                if attemptsleft == 0:
-                    logger.info("gave up registering system %s after failing %i times", _uri, self.maxattempts)
-                elif isinstance(failure.value, ResourceNotFound) or isinstance(failure.value, ResourceConflict):
-                    reactor.callLater(0, on_retry, failure, _uri, _registration, attemptsleft - 1)
-                elif isinstance(failure.value, RetryLater):
-                    logger.info("retrying registering system %s in %i seconds", _uri, self.attemptdelay)
-                    reactor.callLater(self.attemptdelay, on_retry, failure, _uri, _registration, attemptsleft - 1)
-                else:
-                    logger.error("gave up registering system %s after fatal error: %s", _uri, failure.getErrorMessage())
-            defer.addCallback(on_registered)
-            defer.addErrback(on_failure, uri, registration, self.maxattempts)
+            self.register_system(uri, system)
 
     def stopService(self):
         """
