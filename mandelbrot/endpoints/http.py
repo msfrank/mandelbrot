@@ -59,6 +59,9 @@ class HTTPEndpoint(Endpoint):
         def on_response(response):
             if response.code != 200:
                 logger.debug("message was dropped by server: %i %s", response.code, response.phrase)
+                def read_failure(body):
+                    logger.debug("HTTP response entity was:\n----\n" + body + "\n----")
+                http.read_body(response).addCallback(read_failure)
         def on_failure(failure):
             logger.debug("failed to send message: %s", failure.getErrorMessage())
         defer.addCallbacks(on_response, on_failure)

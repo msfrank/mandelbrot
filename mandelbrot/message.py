@@ -41,7 +41,7 @@ class ProbeMessage(Message):
 
     def __dump__(self):
         data = Message.__dump__(self)
-        data['payload'] = {'source': str(self.source)}
+        data['payload'] = {'probeRef': str(self.source)}
         return data
 
 class StatusMessage(ProbeMessage):
