@@ -1,0 +1,18 @@
+[supervisor]
+supervisor url = http://localhost:8080
+
+[agent]
+state directory = state/
+system directory = systems/
+spool directory = spool/
+max registration attempts = 3
+registration attempt delay = 10 seconds
+runtime user = mandelbrot
+runtime group = mandelbrot
+
+probe interval = 20 seconds
+probe splay = 5 seconds
+joining timeout = 5 minutes
+probe timeout = 1 minute
+alert timeout = 90 seconds
+leaving timeout = 12 hours

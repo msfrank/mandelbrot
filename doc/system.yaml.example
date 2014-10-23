@@ -1,0 +1,23 @@
+---
+system:
+  system type: "io.mandelbrot.system.GenericHost"
+  uri: "fqdn:localhost.localdomain"
+  metadata:
+    pretty name: "localhost"
+  policy:
+    joining timeout: 10 minutes
+    probe timeout: 10 minutes
+    alert timeout: 10 minutes
+  probes:
+    /load:
+      probe type: "io.mandelbrot.probe.SystemLoad"
+      per cpu: true
+      failed threshold: "5.0 2.5 2.0"
+    /cpu:
+      probe type: "io.mandelbrot.probe.SystemCPU"
+      idle failed threshold: "50%"
+    /memory:
+      probe type: "io.mandelbrot.probe.SystemMemory"
+    /stats:
+      probe type: "io.mandelbrot.probe.MetricsEvaluation"
+      failed threshold: "when /load:load1 > 2"
