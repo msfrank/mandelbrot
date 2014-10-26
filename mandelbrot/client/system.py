@@ -67,7 +67,7 @@ def system_status_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            results = from_json(body).values()
+            results = from_json(body)['status'].values()
             if len(results) > 0:
                 status = sort_results(results, sort)
                 print render_table(status, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
