@@ -26,14 +26,14 @@ Agent Quickstart
 The easiest way to try out mandelbrot is to install the agent and client
 utilities in a `virtualenv` environment.  Assuming you already have cloned
 the mandelbrot git repository and virtualenv is installed, create a new
-env and install mandelbrot using `setuptools`:
+env and install mandelbrot using `setuptools`::
 
   $ virtualenv mandelbrot-env
   $ source mandelbrot-env/bin/activate
   $ python mandelbrot-src/setup.py install
 
 Create the necessary directories within the env, and configure the
-application defaults:
+application defaults::
 
   $ export VENV=$PWD/mandelbrot-env
   $ mkdir -p $VENV/etc
@@ -43,13 +43,13 @@ application defaults:
   $ mkdir -p $VENV/var/run/
   $ python mandelbrot-src/setup.py pesky_default --command set --key RUN_DIR $VENV/var/run
 
-Copy the example configuration file and system file into place:
+Copy the example configuration file and system file into place::
 
   $ cp mandelbrot-src/doc/mandelbrot.conf.example $VENV/etc/mandelbrot.conf
   $ cp mandelbrot-src/doc/system.yaml.example $VENV/var/lib/systems/system.yaml
 
 Now the agent is ready to be started.  Run it in the foreground with verbose
-debugging:
+debugging::
 
   $ mandelbrot-agent -d -f
 
