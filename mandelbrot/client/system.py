@@ -119,7 +119,7 @@ def system_history_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            results = from_json(body)
+            results = from_json(body)['history']
             if len(results) > 0:
                 history = sort_results(results, sort)
                 print render_table(history, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
@@ -170,7 +170,7 @@ def system_notifications_callback(ns):
         body = yield http.read_body(response)
         logger.debug("received body %s", body)
         if response.code == 200:
-            results = from_json(body)
+            results = from_json(body)['history']
             if len(results) > 0:
                 notifications = sort_results(results, sort)
                 print render_table(notifications, expand=False, columns=fields, renderers=renderers, tablefmt=tablefmt)
