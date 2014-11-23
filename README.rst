@@ -23,10 +23,24 @@ Prerequisite Software
 Agent Quickstart
 ----------------
 
+First things first, clone the `mandelbrot` git repository::
+
+  $ git clone https://github.com/msfrank/mandelbrot.git mandelbrot-src
+
+Next, you'll need to ensure that build tools, libraries and headers are
+available on your host system.  This is operating-system dependent.  For
+Ubuntu, run the following::
+
+  $ sudo apt-get install build-essential python-dev python-virtualenv
+
+If you are using a RedHat-based system (RHEL, CentOS, Fedora), run the
+following::
+
+  $ sudo yum install @"Development Tools" python-devel python-virtualenv
+
 The easiest way to try out mandelbrot is to install the agent and client
-utilities in a `virtualenv` environment.  Assuming you already have cloned
-the mandelbrot git repository and virtualenv is installed, create a new
-env and install mandelbrot using `setuptools`::
+utilities in a `virtualenv` environment.  Create a new env and install
+mandelbrot using `setuptools`::
 
   $ virtualenv mandelbrot-env
   $ source mandelbrot-env/bin/activate
