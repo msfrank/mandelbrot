@@ -13,8 +13,6 @@ readme = open("README.rst", "r").read()
 
 #load requirement contents from requirements.txt
 requirements = [requirement for requirement in open("requirements.txt", "r").read().split('\n') if requirement]
-print requirements
-exit(0)
 
 setup(
     # package description
