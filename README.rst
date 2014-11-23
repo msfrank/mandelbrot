@@ -51,11 +51,11 @@ application defaults::
 
   $ export VENV=$PWD/mandelbrot-env
   $ mkdir -p $VENV/etc
-  $ python mandelbrot-src/setup.py pesky_default --command set --key SYSCONF_DIR $VENV/etc
+  $ python mandelbrot-src/setup.py pesky_default --command set --key SYSCONF_DIR --value $VENV/etc
   $ mkdir -p $VENV/var/lib/agent $VENV/var/lib/systems
-  $ python mandelbrot-src/setup.py pesky_default --command set --key LOCALSTATE_DIR $VENV/var/lib
+  $ python mandelbrot-src/setup.py pesky_default --command set --key LOCALSTATE_DIR --value $VENV/var/lib
   $ mkdir -p $VENV/var/run/
-  $ python mandelbrot-src/setup.py pesky_default --command set --key RUN_DIR $VENV/var/run
+  $ python mandelbrot-src/setup.py pesky_default --command set --key RUN_DIR --value $VENV/var/run
 
 Copy the example configuration file and system file into place::
 

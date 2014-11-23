@@ -5,5 +5,7 @@
 *.swp
 *.egg-info
 mandelbrot.conf
-dist/
-build/
+/dist/
+/build/
+/run/
+/conf/
