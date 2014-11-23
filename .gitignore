@@ -5,7 +5,9 @@
 *.swp
 *.egg-info
 mandelbrot.conf
-/dist/
-/build/
 /run/
 /conf/
+dist/
+build/
+mandelbrot-env/
+pesky_defaults-0.0.2-py2.7.egg
