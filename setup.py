@@ -11,6 +11,9 @@ exec(open(join(topdir, "mandelbrot/version.py"), "r").read())
 # load contents of README.rst
 readme = open("README.rst", "r").read()
 
+#load requirement contents from requirements.txt
+requirements = [requirement for requirement in open("requirements.txt", "r").read().split('\n') if requirement]
+
 setup(
     # package description
     name = "mandelbrot",
@@ -25,20 +28,7 @@ setup(
         'pesky-defaults >= 0.0.2',
         ],
     # installation dependencies
-    install_requires=[
-        'zope.interface',
-        'twisted >= 13.2.0',
-        'PyYAML >= 3.11',
-        'pesky-settings >= 0.0.4',
-        'pesky-defaults >= 0.0.2',
-        'psutil >= 2.1.0',
-        'tabulate >= 0.7.2',
-        'setproctitle >= 1.1.8',
-        'python-daemon >= 1.5.5',
-        'pyparsing >= 2.0.2',
-        'python-dateutil >= 2.2',
-        'setuptools',
-        ],
+    install_requires=requirements,
     # package classifiers for PyPI
     classifiers=[
         "Development Status :: 3 - Alpha",

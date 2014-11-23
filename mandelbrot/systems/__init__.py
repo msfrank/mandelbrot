@@ -16,7 +16,6 @@
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
 from zope.interface import Interface, implements
-from mandelbrot.mbobject import MBObject
 
 class ISystem(Interface):
 
