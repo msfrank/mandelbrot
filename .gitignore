@@ -7,7 +7,7 @@
 mandelbrot.conf
 /run/
 /conf/
-dist/
-build/
-mandelbrot-env/
+/dist/
+/build/
+/mandelbrot-env/
 pesky_defaults-0.0.2-py2.7.egg
