@@ -1,12 +1,8 @@
 PyYAML==3.11
 lockfile==0.10.2
-pesky-defaults==0.0.2
-pesky-settings==0.0.4
 psutil==2.1.0
 pyparsing==2.0.2
 python-daemon==1.6.1
 python-dateutil==2.2
 six==1.8.0
 tabulate==0.7.2
-wsgiref==0.1.2
-zope.interface==4.1.1

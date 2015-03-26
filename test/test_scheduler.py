@@ -7,11 +7,11 @@ import mandelbrot.agent.scheduler
 
 class TestScheduler(unittest.TestCase):
 
-    def f1():
+    def f1(self):
         return "f1"
-    def f2():
+    def f2(self):
         return "f2"
-    def f3():
+    def f3(self):
         return "f3"
 
     def test_schedule_tasks_in_order(self):

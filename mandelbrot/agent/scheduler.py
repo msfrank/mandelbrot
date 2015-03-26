@@ -1,5 +1,3 @@
-__author__ = 'msfrank'
-
 import asyncio
 import random
 import logging
