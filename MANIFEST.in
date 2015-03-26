@@ -1,3 +1,2 @@
 include README.rst
 include COPYING
-include mandelbrot.conf.example
