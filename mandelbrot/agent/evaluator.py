@@ -6,28 +6,6 @@ log = logging.getLogger("mandelbrot.agent.evaluator")
 
 from mandelbrot.agent.scheduler import Scheduler
 
-class ScheduledCheck(object):
-    """
-    """
-    def __init__(self, check, delay, offset, jitter):
-        """
-        :param check:
-        :type check: callable
-        :param delay:
-        :type delay: float
-        :param offset:
-        :type offset: float
-        :param jitter:
-        :type jitter: float
-        """
-        self.check = check
-        self.delay = delay
-        self.offset = offset
-        self.jitter = jitter
-
-    def __call__(self, *args, **kwargs):
-        return self.check()
-
 class Evaluator(object):
     """
     """
@@ -76,3 +54,41 @@ class Evaluator(object):
         :rtype: callable
         """
         return (yield from self.queue.get())
+
+class ScheduledCheck(object):
+    """
+    """
+    def __init__(self, check, delay, offset, jitter):
+        """
+        :param check:
+        :type check: callable
+        :param delay:
+        :type delay: float
+        :param offset:
+        :type offset: float
+        :param jitter:
+        :type jitter: float
+        """
+        self.check = check
+        self.delay = delay
+        self.offset = offset
+        self.jitter = jitter
+
+    def __call__(self, *args, **kwargs):
+        try:
+            return self.check()
+        except Exception as e:
+            return CheckFailed(self, e)
+
+class CheckFailed(object):
+    """
+    """
+    def __init__(self, scheduled_check, failure):
+        """
+        :param scheduled_check:
+        :type scheduled_check: ScheduledCheck
+        :param failure:
+        :type failure: Exception
+        """
+        self.scheduled_check = scheduled_check
+        self.failure = failure
