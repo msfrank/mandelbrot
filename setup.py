@@ -49,6 +49,7 @@ setup(
     # test dependencies
     tests_require=[
         "nose >= 1.3.4",
+        "requests-mock >= 0.6.0",
         ],
     test_suite="test"
 )

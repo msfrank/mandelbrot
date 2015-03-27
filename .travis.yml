@@ -1,4 +1,9 @@
 language: python
 python:
   - "3.4"
+# install runtime and test dependencies
+install:
+  - "pip install -r requirements.txt"
+  - "pip install -r test_requirements.txt"
+# run tests
 script: nosetests
