@@ -26,6 +26,15 @@ object5:
         field9 = value9
 """
 
+    deep_path_data = \
+"""
+toplevel:
+    this.is.deep:
+        field1 = value1
+    shallow:
+        field2 = value2
+"""
+
     def test_parse_comment_line(self):
         indent,result = mandelbrot.mcon.parse_line("#this is a comment")
         self.assertTupleEqual(result._fields, mandelbrot.mcon.Comment("this is a comment")._fields)
@@ -52,5 +61,12 @@ object5:
         self.assertEquals(root['field8'], ' value8')
         self.assertEquals(root['object5']['field9'], ' value9')
 
+    def test_mcon_load_deep_path(self):
+        mandelbrot.mcon.debugs(self.deep_path_data)
+        root = mandelbrot.mcon.loads(self.deep_path_data)
+        print(root)
+        self.assertEquals(root['toplevel']['this']['is']['deep']['field1'], ' value1')
+        self.assertEquals(root['toplevel']['shallow']['field2'], ' value2')
+
 if __name__ == '__main__':
-    TestMCON().test_mcon_load_multi_line()
+    TestMCON().test_mcon_load_deep_path()
