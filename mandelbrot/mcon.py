@@ -9,8 +9,10 @@ class Path(object):
         return '.'.join(self.segments) if len(self.segments) > 0 else '.'
     def __repr__(self):
         return str(self)
-    def __cmp__(self, other):
+    def __eq__(self, other):
         return self.segments == other.segments
+    def __hash__(self):
+        return hash(str(self))
     def __iter__(self):
         return iter(self.segments)
     def __add__(self, other):
@@ -182,7 +184,7 @@ class Parser(object):
                 container[segment] = {}
                 container = container[segment]
         container_name = path.segments[-1]
-        if path in frame.container:
+        if container_name in frame.container:
             raise KeyError("container exists at path {0}".format(path))
         container[container_name] = {}
         container = container[container_name]
