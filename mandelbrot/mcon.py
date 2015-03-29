@@ -30,8 +30,6 @@ fielddef = fieldkey + pp.Literal('=') + pp.restOfLine
 valuecontinuation = pp.Literal('|') + pp.restOfLine
 listcontinuation = pp.Literal(',') + pp.restOfLine
 
-emptyline = pp.StringEnd()
-
 def comment_parse_action(tokens):
     return Comment(tokens[1])
 comment.setParseAction(comment_parse_action)
@@ -56,11 +54,7 @@ def listcontinuation_parse_action(tokens):
     return ListContinuation(tokens[1])
 listcontinuation.setParseAction(listcontinuation_parse_action)
 
-def emptyline_parse_action(tokens):
-    return Comment('')
-emptyline.setParseAction(emptyline_parse_action)
-
-Line = comment ^ objectdef ^ fielddef ^ valuecontinuation ^ listcontinuation ^ emptyline
+Line = comment ^ objectdef ^ fielddef ^ valuecontinuation ^ listcontinuation
 
 def line_parse_action(tokens):
     return None if len(tokens) == 0 else tokens[0]
@@ -99,6 +93,9 @@ def iter_lines(f):
     """
     linenum = 1
     for text in f.readlines():
+        # ignore lines that consist entirely of whitespace
+        if text.isspace():
+            continue
         indent,value = parse_line(text)
         yield linenum,indent,value
         linenum += 1
@@ -111,10 +108,8 @@ def load(f):
     """
     Frame = collections.namedtuple('Frame', ['linenum','indent','object','field'])
     root_object = {}
-    # stack tuple is (linenum,indent,object,field)
     frames = [Frame(None,None,root_object,None)]
 
-    print("----")
     for linenum,indent,value in iter_lines(f):
         if isinstance(value, Comment):
             continue
@@ -161,7 +156,7 @@ def load(f):
                 curr_field = None
 
             frames.insert(0, Frame(linenum, curr_indent, curr_object, curr_field))
-            print("top of stack: {0}".format(frames[0]))
+            print("inserting object {0}: stack={1}".format(value.path, frames[0]))
 
         if isinstance(value, FieldDef):
             frame = frames[0]
@@ -169,7 +164,7 @@ def load(f):
                 print("inserting field: {0} => {1}".format(value.name, value.value))
                 frame.object[value.name] = value.value
             else:
-                while frame.indent >= indent:
+                while frame.indent is not None and frame.indent >= indent:
                     if len(frames) == 0:
                         raise Exception("no parent indent")
                     frames.pop(0)
@@ -184,7 +179,6 @@ def load(f):
         if isinstance(value, ListContinuation):
             pass
 
-    print("----")
     return root_object
 
 def loads(s):
