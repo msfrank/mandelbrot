@@ -36,16 +36,46 @@ toplevel:
 """
 
     def test_parse_comment_line(self):
-        indent,result = mandelbrot.mcon.parse_line("#this is a comment")
-        self.assertTupleEqual(result._fields, mandelbrot.mcon.Comment("this is a comment")._fields)
+        indent,result = mandelbrot.mcon.parse_line("# this is a comment")
+        self.assertIsInstance(result, mandelbrot.mcon.Comment)
+        result_fields = vars(result)
+        other_fields = vars(mandelbrot.mcon.Comment(" this is a comment"))
+        self.assertDictEqual(result_fields, other_fields)
 
     def test_parse_objectdef_line(self):
         indent,result = mandelbrot.mcon.parse_line("object:")
-        self.assertTupleEqual(result._fields, mandelbrot.mcon.ObjectDef('object')._fields)
+        self.assertIsInstance(result, mandelbrot.mcon.ObjectDef)
+        result_fields = vars(result)
+        other_fields = vars(mandelbrot.mcon.ObjectDef(mandelbrot.mcon.Path(['object'])))
+        self.assertDictEqual(result_fields, other_fields)
+
+    def test_parse_deep_objectdef_line(self):
+        indent,result = mandelbrot.mcon.parse_line("deep.nested.object:")
+        self.assertIsInstance(result, mandelbrot.mcon.ObjectDef)
+        result_fields = vars(result)
+        other_fields = vars(mandelbrot.mcon.ObjectDef(mandelbrot.mcon.Path(['deep','nested','object'])))
+        self.assertDictEqual(result_fields, other_fields)
 
     def test_parse_fielddef_line(self):
         indent,result = mandelbrot.mcon.parse_line("foo = bar")
-        self.assertTupleEqual(result._fields, mandelbrot.mcon.FieldDef('foo', ' bar')._fields)
+        self.assertIsInstance(result, mandelbrot.mcon.FieldDef)
+        result_fields = vars(result)
+        other_fields = vars(mandelbrot.mcon.FieldDef('foo', ' bar'))
+        self.assertDictEqual(result_fields, other_fields)
+
+    def test_parse_valuecontinuation_line(self):
+        indent,result = mandelbrot.mcon.parse_line("| this is a continuation")
+        self.assertIsInstance(result, mandelbrot.mcon.ValueContinuation)
+        result_fields = vars(result)
+        other_fields = vars(mandelbrot.mcon.ValueContinuation(' this is a continuation'))
+        self.assertDictEqual(result_fields, other_fields)
+
+    def test_parse_listcontinuation_line(self):
+        indent,result = mandelbrot.mcon.parse_line(", this is a continuation")
+        self.assertIsInstance(result, mandelbrot.mcon.ListContinuation)
+        result_fields = vars(result)
+        other_fields = vars(mandelbrot.mcon.ListContinuation(' this is a continuation'))
+        self.assertDictEqual(result_fields, other_fields)
 
     def test_mcon_load_multi_line(self):
         mandelbrot.mcon.debugs(self.multi_line_data)
@@ -67,6 +97,3 @@ toplevel:
         print(root)
         self.assertEquals(root['toplevel']['this']['is']['deep']['field1'], ' value1')
         self.assertEquals(root['toplevel']['shallow']['field2'], ' value2')
-
-if __name__ == '__main__':
-    TestMCON().test_mcon_load_deep_path()
