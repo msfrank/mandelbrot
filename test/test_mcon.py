@@ -33,6 +33,17 @@ toplevel:
         field1 = value1
     shallow:
         field2 = value2
+field3 = value3
+"""
+
+    value_continuation_data = \
+"""
+toplevel:
+    field1 = first line
+           | second line
+           | third line
+    field2 = value2
+field3 = value3
 """
 
     def test_parse_comment_line(self):
@@ -97,3 +108,15 @@ toplevel:
         print(root)
         self.assertEquals(root['toplevel']['this']['is']['deep']['field1'], ' value1')
         self.assertEquals(root['toplevel']['shallow']['field2'], ' value2')
+        self.assertEquals(root['field3'], ' value3')
+
+    def test_mcon_load_value_continuation_data(self):
+        mandelbrot.mcon.debugs(self.value_continuation_data)
+        root = mandelbrot.mcon.loads(self.value_continuation_data)
+        print(root)
+        self.assertEquals(root['toplevel']['field1'], ' first line\n second line\n third line')
+        self.assertEquals(root['toplevel']['field2'], ' value2')
+        self.assertEquals(root['field3'], ' value3')
+
+if __name__ == '__main__':
+    TestMCON().test_mcon_load_value_continuation_data()

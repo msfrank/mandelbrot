@@ -135,20 +135,26 @@ class RootFrame(ContainerFrame):
         return "RootFrame()"
 
 class FieldFrame(Frame):
-    def __init__(self, linenum, indent, container_path, field_name, field_value):
+    def __init__(self, linenum, indent, path, container, field_name, field_value):
         super().__init__(linenum, indent)
-        self.container_path = container_path
+        self.path = path
+        self.container = container
         self.field_name = field_name
         self.field_value = field_value
     def __str__(self):
-        return "FieldFrame(linenum={0}, indent={1}, container_path={2}, field_name={3})".format(
-            self.linenum,self.indent,self.container_path,self.field_name)
+        return "FieldFrame(linenum={0}, indent={1}, path={2}, field_name={3})".format(
+            self.linenum,self.indent,self.path,self.field_name)
 
 class ValueContinuationFrame(Frame):
-    def __init__(self, linenum, indent, container_path, field_name):
+    def __init__(self, linenum, indent, path, container, field_name, field_value):
         super().__init__(linenum, indent)
-        self.container_path = container_path
+        self.path = path
+        self.container = container
         self.field_name = field_name
+        self.field_value = field_value
+    def __str__(self):
+        return "ValueContinuationFrame(linenum={0}, indent={1}, path={2}, field_name={3})".format(
+            self.linenum,self.indent,self.path,self.field_name)
 
 class Parser(object):
     """
@@ -212,9 +218,9 @@ class Parser(object):
         if field_name in frame.container:
             raise KeyError("field {0} exists in container at path {1}".format(field_name, frame.path))
         frame.container[field_name] = field_value
-        frame = FieldFrame(linenum, indent, frame.path, field_name, field_value)
+        frame = FieldFrame(linenum, indent, frame.path, frame.container, field_name, field_value)
         self.push_frame(frame)
-        print("created field {0} in container at path {1}".format(field_name, frame.container_path))
+        print("created field {0} in container at path {1}".format(field_name, frame.path))
 
     def append_sibling_field(self, linenum, indent, field_name, field_value):
         frame = self.current_frame()
@@ -228,6 +234,21 @@ class Parser(object):
         while frame.indent != indent:
             frame = self.pop_frame()
         self.append_sibling_field(linenum, indent, field_name, field_value)
+
+    def append_value_continuation(self, linenum, indent, continuation):
+        frame = self.current_frame()
+        if isinstance(frame, FieldFrame):
+            assert frame.indent < indent and frame.field_name in frame.container
+        if isinstance(frame, ValueContinuationFrame):
+            assert frame.indent == indent and frame.field_name in frame.container
+            self.pop_frame()
+        field_value = frame.field_value + '\n' + continuation
+        frame.container[frame.field_name] = field_value
+        frame = ValueContinuationFrame(linenum, indent, frame.path, frame.container, frame.field_name, field_value)
+        self.push_frame(frame)
+
+    def append_list_continuation(self, linenum, indent, continuation):
+        pass
 
 def load(f):
     """
@@ -272,10 +293,10 @@ def load(f):
                 parser.append_parent_field(linenum, indent, value.field_name, value.field_value)
 
         if isinstance(value, ValueContinuation):
-            pass
+            parser.append_value_continuation(linenum, indent, value.value_continuation)
 
         if isinstance(value, ListContinuation):
-            pass
+            parser.append_list_continuation(linenum, indent, value.list_continuation)
 
     return parser.root
 
