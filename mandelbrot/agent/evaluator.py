@@ -9,14 +9,14 @@ from mandelbrot.agent.scheduler import Scheduler
 class Evaluator(object):
     """
     """
-    def __init__(self, event_loop, executor, checks):
+    def __init__(self, event_loop, checks, executor):
         """
         :param event_loop:
         :type event_loop: asyncio.AbstractEventLoop
-        :param executor:
-        :type executor: concurrent.future.Executor
         :param checks:
         :type checks: list[ScheduledCheck]
+        :param executor:
+        :type executor: concurrent.futures.Executor
         """
         self.event_loop = event_loop
         self.executor = executor
@@ -29,25 +29,28 @@ class Evaluator(object):
     def run_forever(self):
         """
         """
-        pending = set()
-        pending.add(self.scheduler.next_task())
-        while True:
-            log.debug("waiting for %s", pending)
-            done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
-                return_when=concurrent.futures.FIRST_COMPLETED)
-            log.debug("done=%s, pending=%s", done, pending)
-            done = [r.result() for r in done]
-            for result in done:
-                if isinstance(result, ScheduledCheck):
-                    log.debug("submitting %s to executor", result)
-                    execute_check = self.event_loop.run_in_executor(self.executor, result)
-                    pending.add(execute_check)
-                    pending.add(self.scheduler.next_task())
-                else:
-                    try:
-                        self.queue.put_nowait(result)
-                    except asyncio.QueueFull:
-                        log.error("failed to enqueue evaluated check, queue is full")
+        try:
+            pending = set()
+            pending.add(self.scheduler.next_task())
+            while True:
+                log.debug("waiting for %s", pending)
+                done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
+                    return_when=concurrent.futures.FIRST_COMPLETED)
+                log.debug("done=%s, pending=%s", done, pending)
+                done = [r.result() for r in done]
+                for result in done:
+                    if isinstance(result, ScheduledCheck):
+                        log.debug("submitting %s to executor", result)
+                        execute_check = self.event_loop.run_in_executor(self.executor, result)
+                        pending.add(execute_check)
+                        pending.add(self.scheduler.next_task())
+                    else:
+                        try:
+                            self.queue.put_nowait(result)
+                        except asyncio.QueueFull:
+                            log.error("failed to enqueue evaluated check, queue is full")
+        except asyncio.CancelledError:
+            log.debug("evaluator was cancelled")
 
     @asyncio.coroutine
     def next_evaluation(self):
@@ -60,10 +63,12 @@ class Evaluator(object):
 class ScheduledCheck(object):
     """
     """
-    def __init__(self, check, delay, offset, jitter):
+    def __init__(self, id, check, delay, offset, jitter):
         """
+        :param id:
+        :type id: str
         :param check:
-        :type check: callable
+        :type check: mandelbrot.checks.Check
         :param delay:
         :type delay: float
         :param offset:
@@ -71,6 +76,7 @@ class ScheduledCheck(object):
         :param jitter:
         :type jitter: float
         """
+        self.id = id
         self.check = check
         self.delay = delay
         self.offset = offset
@@ -78,9 +84,22 @@ class ScheduledCheck(object):
 
     def __call__(self, *args, **kwargs):
         try:
-            return self.check()
+            return CheckResult(self, self.check())
         except Exception as e:
             return CheckFailed(self, e)
+
+class CheckResult(object):
+    """
+    """
+    def __init__(self, scheduled_check, result):
+        """
+        :param scheduled_check:
+        :type scheduled_check: ScheduledCheck
+        :param result:
+        :type result: object
+        """
+        self.scheduled_check = scheduled_check
+        self.result = result
 
 class CheckFailed(object):
     """

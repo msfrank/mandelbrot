@@ -2,6 +2,7 @@ import bootstrap
 
 import unittest
 import asyncio
+import concurrent.futures
 import requests
 import requests_mock
 
@@ -21,9 +22,10 @@ class TestEndpoint(unittest.TestCase):
             )
         session = requests.Session()
         session.mount('mock', mock)
-        endpoint = mandelbrot.agent.endpoint.Endpoint(event_loop, self.url, 1, session)
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        endpoint = mandelbrot.agent.endpoint.Endpoint(event_loop, self.url, session, executor)
         future = asyncio.wait_for(endpoint.get_agent('localhost.localdomain'), 5.0, loop=event_loop)
-        response_item = event_loop.run_until_complete(future)
-        self.assertIsInstance(response_item, mandelbrot.endpoint.ResponseItem)
-        self.assertEqual(response_item.response.status_code, 200)
-        self.assertEqual(response_item.item, {'foo': 'bar'})
+        response = event_loop.run_until_complete(future)
+        self.assertIsInstance(response, requests.Response)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'foo': 'bar'})

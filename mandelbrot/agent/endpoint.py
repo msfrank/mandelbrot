@@ -20,7 +20,7 @@ class Endpoint(mandelbrot.endpoint.Endpoint):
         request = requests.Request(method='GET',
             url=self.absolute_url('v2/systems/' + agent_id)
             )
-        return self.request_item(request)
+        return self.request_response(request)
 
     def register_agent(self, agent_id, registration):
         """
@@ -31,7 +31,7 @@ class Endpoint(mandelbrot.endpoint.Endpoint):
         """
         request = requests.Request(method='POST', url=self.absolute_url('v2/systems'),
             json=registration.destructure())
-        return self.request_item(request)
+        return self.request_response(request)
 
     def update_agent(self, agent_id, registration):
         """
@@ -43,7 +43,7 @@ class Endpoint(mandelbrot.endpoint.Endpoint):
         request = requests.Request(method='PUT',
             url=self.absolute_url('v2/systems/' + agent_id),
             json=registration.destructure())
-        return self.request_item(request)
+        return self.request_response(request)
 
     def unregister_agent(self, agent_id):
         """
@@ -55,12 +55,12 @@ class Endpoint(mandelbrot.endpoint.Endpoint):
         request = requests.Request(method='DELETE',
             url=self.absolute_url('v2/systems/' + agent_id),
             )
-        return self.request_item(request)
+        return self.request_response(request)
 
-    def submit_evaluation(self, agent_id, evaluation):
+    def submit_evaluation(self, agent_id, check_id, evaluation):
         """
         """
         request = requests.Request(method='POST',
-            url=self.absolute_url('v2/systems' + agent_id),
+            url=self.absolute_url('v2/systems/' + agent_id + '/probes/' + check_id),
             json=evaluation.destructure())
-        return self.request(request)
+        return self.request_response(request)
