@@ -45,6 +45,9 @@ setup(
         'mandelbrot.agent',
         ],
     entry_points={
+        'console_scripts': [
+            'mandelbrot=mandelbrot.command:main',
+            ],
         },
     # test dependencies
     tests_require=[

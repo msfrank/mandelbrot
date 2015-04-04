@@ -3,6 +3,9 @@ import logging
 
 log = logging.getLogger("mandelbrot.instance")
 
+from mandelbrot.agent.evaluator import ScheduledCheck
+from mandelbrot.checks.dummy import AlwaysHealthy
+
 class Instance(object):
     """
     """
@@ -28,5 +31,7 @@ def open_instance(path, mode, **flags):
     """
     flag_creat = bool(flags.get('create', False))
     flag_excl = bool(flags.get('exclusive', False))
-    checks = []
-    return None
+    checks = [
+        ScheduledCheck('always.healthy', AlwaysHealthy(), 5.0, 0, 0)
+    ]
+    return Instance(path, 'dummy.agent', checks)

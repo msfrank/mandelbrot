@@ -34,6 +34,8 @@ class Processor(object):
             self.evaluator_task = self.event_loop.create_task(self.evaluator.run_forever())
             while True:
                 result = yield from self.evaluator.next_evaluation()
+                if result is None:
+                    return
                 if isinstance(result, CheckResult):
                     check_id = result.scheduled_check.id
                     evaluation = result.result
@@ -47,14 +49,18 @@ class Processor(object):
                     pass
         except asyncio.CancelledError:
             log.debug("processor has been cancelled")
-            if self.evaluator_task is not None:
-                try:
-                    self.evaluator_task.cancel()
-                    self.event_loop.run_until_complete(self.evaluator_task)
-                except asyncio.CancelledError:
-                    pass
-            self.evaluator_task = None
-            self.evaluator = None
+        finally:
+            self.cleanup()
+
+    def cleanup(self):
+        if self.evaluator_task is not None:
+            try:
+                self.evaluator_task.cancel()
+                self.event_loop.run_until_complete(self.evaluator_task)
+            except asyncio.CancelledError:
+                pass
+        self.evaluator_task = None
+        self.evaluator = None
 
     def posted_evaluation(self, f):
         result = f.result()

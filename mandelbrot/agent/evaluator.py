@@ -58,7 +58,12 @@ class Evaluator(object):
         :returns: The next completed check evaluation.
         :rtype: callable
         """
-        return (yield from self.queue.get())
+        result = None
+        try:
+            result = yield from self.queue.get()
+        except asyncio.CancelledError:
+            log.debug("cancelled while waiting for next evaluation")
+        return result
 
 class ScheduledCheck(object):
     """
