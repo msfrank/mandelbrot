@@ -10,7 +10,7 @@ class Scheduler(object):
     def __init__(self, event_loop):
         """
         :param event_loop:
-        :type event_loop: asyncio.BaseEventLoop
+        :type event_loop: asyncio.AbstractEventLoop
         """
         self.event_loop = event_loop
         self.task_list = {}
@@ -58,7 +58,7 @@ class ScheduledTask(object):
     def __init__(self, event_loop, queue, f, delay, offset, jitter):
         """
         :param event_loop:
-        :type event_loop: asyncio.BaseEventLoop
+        :type event_loop: asyncio.AbstractEventLoop
         :param queue:
         :type queue: asyncio.Queue
         :param f:

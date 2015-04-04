@@ -11,6 +11,8 @@ class Evaluator(object):
     """
     def __init__(self, event_loop, executor, checks):
         """
+        :param event_loop:
+        :type event_loop: asyncio.AbstractEventLoop
         :param executor:
         :type executor: concurrent.future.Executor
         :param checks:
