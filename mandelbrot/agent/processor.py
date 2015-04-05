@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import logging
 import requests
 
@@ -24,47 +25,52 @@ class Processor(object):
         self.endpoint = endpoint
         self.executor = executor
         self.evaluator = Evaluator(self.event_loop, self.instance.checks, self.executor)
-        self.evaluator_task = None
 
     @asyncio.coroutine
-    def run_forever(self):
+    def run_until_signaled(self, signal):
         """
         """
-        try:
-            self.evaluator_task = self.event_loop.create_task(self.evaluator.run_forever())
-            while True:
-                result = yield from self.evaluator.next_evaluation()
-                if result is None:
-                    return
+        shutdown_signal = self.event_loop.create_task(signal.wait())
+        evaluator_task = self.event_loop.create_task(self.evaluator.run_until_signaled(signal))
+        pending = set()
+        pending.add(shutdown_signal)
+        pending.add(self.evaluator.next_evaluation())
+
+        while True:
+            log.debug("waiting for %s", pending)
+            done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
+                    return_when=concurrent.futures.FIRST_COMPLETED)
+            log.debug("done=%s, pending=%s", done, pending)
+
+            # if we were signaled, then break the loop
+            if shutdown_signal.done():
+                break
+
+            # otherwise process the result of all completed futures
+            done = [r.result() for r in done]
+            for result in done:
                 if isinstance(result, CheckResult):
                     check_id = result.scheduled_check.id
                     evaluation = result.result
                     log.debug("check %s submits evaluation %s", check_id, evaluation)
                     f = self.endpoint.submit_evaluation(self.instance.id, check_id, evaluation)
-                    f.add_done_callback(self.posted_evaluation)
+                    pending.add(f)
+                    pending.add(self.evaluator.next_evaluation())
                 elif isinstance(result, CheckFailed):
                     check_id = result.scheduled_check.id
                     log.debug("check %s failed: %s", check_id, str(result.failure))
-                else:
-                    pass
-        except asyncio.CancelledError:
-            log.debug("processor has been cancelled")
-        finally:
-            self.cleanup()
+                    pending.add(self.evaluator.next_evaluation())
+                elif isinstance(result, requests.Response):
+                    log.debug("endpoint responds %s", result.status_code)
+                elif isinstance(result, Failure):
+                    log.debug("endpoint raises %s", result.exception)
 
-    def cleanup(self):
-        if self.evaluator_task is not None:
-            try:
-                self.evaluator_task.cancel()
-                self.event_loop.run_until_complete(self.evaluator_task)
-            except asyncio.CancelledError:
-                pass
-        self.evaluator_task = None
+        # cancel all pending futures
+        for f in pending:
+            log.debug("cancelling pending future %s", f)
+            f.cancel()
+
+        # wait for evaluator to finish cleaning up
+        yield from asyncio.wait_for(evaluator_task, None, loop=self.event_loop)
         self.evaluator = None
 
-    def posted_evaluation(self, f):
-        result = f.result()
-        if isinstance(result, requests.Response):
-            log.debug("endpoint responds %s", result.status_code)
-        elif isinstance(result, Failure):
-            log.debug("endpoint raises %s", result.exception)

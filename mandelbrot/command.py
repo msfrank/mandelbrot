@@ -10,7 +10,7 @@ def main():
     :return:
     """
     try:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(name)s: %(message)s")
         path = '/tmp'
         endpoint_url = 'http://localhost'
         endpoint_executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)

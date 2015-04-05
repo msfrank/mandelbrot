@@ -27,61 +27,55 @@ class Supervisor(object):
         self.endpoint_url = endpoint_url
         self.endpoint_executor = endpoint_executor
         self.check_executor = check_executor
-        self.event_loop = asyncio.get_event_loop()
-        self.processor_task = None
         self.is_finished = False
         self.ignore_signals = False
 
     def run_forever(self):
         """
         """
+        event_loop = asyncio.get_event_loop()
+        shutdown_signal = asyncio.Event(loop=event_loop)
+
         # add handlers for the signals we are interested in
-        self.event_loop.add_signal_handler(signal.SIGHUP, self.reload)
-        self.event_loop.add_signal_handler(signal.SIGTERM, self.terminate)
-        self.event_loop.add_signal_handler(signal.SIGINT, self.terminate)
+        event_loop.add_signal_handler(signal.SIGHUP, self.reload, shutdown_signal)
+        event_loop.add_signal_handler(signal.SIGTERM, self.terminate, shutdown_signal)
+        event_loop.add_signal_handler(signal.SIGINT, self.terminate, shutdown_signal)
+
         # create the http endpoint
         session = requests.Session()
-        endpoint = Endpoint(self.event_loop, self.endpoint_url, session, self.endpoint_executor)
+        endpoint = Endpoint(event_loop, self.endpoint_url, session, self.endpoint_executor)
+
         # loop forever until is_finished is True 
         try:
             log.debug("--- starting agent process ---")
             while not self.is_finished:
                 # create a new agent and run it forever until it completes
                 instance = open_instance(self.path, 0o600)
-                processor = Processor(self.event_loop, instance, endpoint, self.check_executor)
-                self.processor_task = self.event_loop.create_task(processor.run_forever())
+                processor = Processor(event_loop, instance, endpoint, self.check_executor)
                 # enable signal catching
                 self.ignore_signals = False
                 # wait until the processor completes
-                self.event_loop.run_until_complete(self.processor_task)
-                # check the result of the task
-                try:
-                    result = self.processor_task.result()
-                    raise ValueError("agent returned unexpected value {0]".format(result))
-                # we expect CancelledError
-                except asyncio.CancelledError:
-                    pass
-                # any other condition is fatal
-                except:
-                    raise
+                event_loop.run_until_complete(processor.run_until_signaled(shutdown_signal))
+                # reset the shutdown signal event
+                shutdown_signal.clear()
         finally:
             log.debug("shutting down executors")
             self.check_executor.shutdown()
             self.endpoint_executor.shutdown()
             log.debug("shutting down executors")
-            self.event_loop.stop()
-            self.event_loop.close()
-            self.event_loop = None
+            event_loop.stop()
+            event_loop.close()
+            event_loop = None
 
-    def reload(self):
+    def reload(self, shutdown_signal):
         if not self.ignore_signals:
             self.ignore_signals = True
             log.info("--- reloading agent process ---")
-            self.processor_task.cancel()
+            shutdown_signal.set()
 
-    def terminate(self):
+    def terminate(self, shutdown_signal):
         if not self.ignore_signals:
             self.ignore_signals = True
             self.is_finished = True
             log.info("--- terminating agent process ---")
-            self.processor_task.cancel()
+            shutdown_signal.set()

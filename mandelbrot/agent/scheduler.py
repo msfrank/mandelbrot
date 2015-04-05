@@ -44,13 +44,12 @@ class Scheduler(object):
         except:
             raise KeyError("{} is not scheduled".format(f))
 
-    @asyncio.coroutine
     def next_task(self):
         """
         :returns: The next scheduled task function.
         :rtype: callable
         """
-        return (yield from self.queue.get())
+        return self.queue.get()
 
 class ScheduledTask(object):
     """
