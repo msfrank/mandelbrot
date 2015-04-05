@@ -51,6 +51,13 @@ class Scheduler(object):
         """
         return self.queue.get()
 
+    def unschedule_all(self):
+        """
+        """
+        for task in self.task_list.values():
+            task.cancel()
+        self.task_list = {}
+
 class ScheduledTask(object):
     """
     """

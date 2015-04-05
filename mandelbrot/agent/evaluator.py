@@ -59,6 +59,9 @@ class Evaluator(object):
                     except asyncio.QueueFull:
                         log.error("dropping check evaluation, queue is full")
 
+        # unscheduled all scheduled checks
+        self.scheduler.unschedule_all()
+
         # cancel all pending futures
         for f in pending:
             log.debug("cancelling pending future %s", f)

@@ -62,7 +62,7 @@ class Supervisor(object):
             log.debug("shutting down executors")
             self.check_executor.shutdown()
             self.endpoint_executor.shutdown()
-            log.debug("shutting down executors")
+            log.debug("shutting down event loop")
             event_loop.stop()
             event_loop.close()
             event_loop = None
