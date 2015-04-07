@@ -12,9 +12,11 @@ exec(open(join(topdir, "mandelbrot/version.py"), "r").read())
 with open("README.rst", "r") as f:
     readme = f.read()
 
-#load requirement contents from requirements.txt
+# load requirements
 with open("requirements.txt", "r") as f:
     requirements = [requirement for requirement in f.read().split('\n') if requirement]
+with open("test_requirements.txt", "r") as f:
+    test_requirements = [requirement for requirement in f.read().split('\n') if requirement]
 
 setup(
     # package description
@@ -48,11 +50,11 @@ setup(
         'console_scripts': [
             'mandelbrot=mandelbrot.command:main',
             ],
+        'mandelbrot.check': [
+            'AlwaysHealthy=mandelbrot.checks.dummy.AlwaysHealthy',
+            ],
         },
     # test dependencies
-    tests_require=[
-        "nose >= 1.3.4",
-        "requests-mock >= 0.6.0",
-        ],
-    test_suite="test"
+    tests_require=test_requirements,
+    test_suite="test",
 )

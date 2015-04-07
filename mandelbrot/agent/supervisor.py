@@ -5,6 +5,7 @@ import requests
 
 log = logging.getLogger("mandelbrot.agent.supervisor")
 
+from mandelbrot.registry import Registry
 from mandelbrot.agent.endpoint import Endpoint
 from mandelbrot.agent.processor import Processor
 from mandelbrot.instance import open_instance
@@ -41,6 +42,9 @@ class Supervisor(object):
         event_loop.add_signal_handler(signal.SIGTERM, self.terminate, shutdown_signal)
         event_loop.add_signal_handler(signal.SIGINT, self.terminate, shutdown_signal)
 
+        # load registry plugins
+        registry = Registry()
+
         # create the http endpoint
         session = requests.Session()
         endpoint = Endpoint(event_loop, self.endpoint_url, session, self.endpoint_executor)
@@ -50,12 +54,14 @@ class Supervisor(object):
             log.debug("--- starting agent process ---")
             while not self.is_finished:
                 # create a new agent and run it forever until it completes
-                instance = open_instance(self.path, 0o600)
-                processor = Processor(event_loop, instance, endpoint, self.check_executor)
+                instance = open_instance(self.path)
+                processor = Processor(event_loop, instance, registry, endpoint, self.check_executor)
                 # enable signal catching
                 self.ignore_signals = False
                 # wait until the processor completes
                 event_loop.run_until_complete(processor.run_until_signaled(shutdown_signal))
+                # release resources
+                instance.close()
                 # reset the shutdown signal event
                 shutdown_signal.clear()
         finally:

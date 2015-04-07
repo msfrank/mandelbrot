@@ -1,37 +1,199 @@
 import os
+import pathlib
 import logging
+import lockfile
+import sqlite3
+import tempfile
 
 log = logging.getLogger("mandelbrot.instance")
-
-from mandelbrot.agent.evaluator import ScheduledCheck
-from mandelbrot.checks.dummy import AlwaysHealthy
 
 class Instance(object):
     """
     """
-    def __init__(self, path, id, checks):
+    def __init__(self, path):
         """
+        :param path:
+        :type path: pathlib.Path
         """
-        self.path = os.path.abspath(path)
-        self.id = id
-        self.checks = checks
+        self.path = path
+        self._db = None
 
-    def exists(self):
-        pass
+    @property
+    def conn(self):
+        if self._db is None:
+            self._db = sqlite3.connect(str(self.path / 'db'))
+        return self._db
 
-    def rename(self, instance_id):
-        pass
+    def close(self):
+        if self._db is not None:
+            self._db.close()
+        self._db = None
 
-    def delete(self):
-        pass
+    def lock(self):
+        lock_path = str(self.path / 'lock')
+        return lockfile.LockFile(lock_path, threaded=True)
 
-def open_instance(path, mode, **flags):
+    def initialize(self):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.create_version_table)
+            conn.execute(_SQLStatements.create_v1_agent_table)
+            conn.execute(_SQLStatements.create_v1_check_table)
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.get_version)
+            version_number = cursor.fetchone()
+            if version_number is None:
+                cursor.execute(_SQLStatements.set_version, (_SQLStatements.version,))
+            elif version_number[0] != _SQLStatements.version:
+                raise Exception("wrong version")
+            else:
+                pass
+
+    def get_agent_id(self):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.get_agent_id)
+            results = cursor.fetchone()
+            if results is not None:
+                return results[0]
+            return None
+
+    def set_agent_id(self, agent_id):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.set_agent_id, (agent_id,))
+
+    def get_endpoint_url(self):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.get_endpoint_url)
+            results = cursor.fetchone()
+            if results is not None:
+                return results[0]
+            return None
+
+    def set_endpoint_url(self, endpoint_url):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.set_endpoint_url, (endpoint_url,))
+
+    def list_checks(self):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.list_checks)
+            for check_id, check_type, check_params, delay, offset, jitter in cursor.fetchall():
+                yield InstanceCheck(check_id, check_type, check_params, delay, offset, jitter)
+
+    def get_check(self, check_id):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.get_check, (check_id,))
+            results = cursor.fetchone()
+            if results is not None:
+                check_id, check_type, check_params, delay, offset, jitter = results
+                return InstanceCheck(check_id, check_type, check_params, delay, offset, jitter)
+            return None
+
+    def set_check(self, instance_check):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.set_check, (instance_check.check_id,
+                instance_check.check_type, instance_check.check_params, instance_check.delay,
+                instance_check.offset, instance_check.jitter))
+
+    def delete_check(self, check_id):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.delete_check, (check_id,))
+
+class InstanceCheck(object):
     """
+    """
+    def __init__(self, check_id, check_type, check_params, delay, offset, jitter):
+        """
+        """
+        self.check_id = check_id
+        self.check_type = check_type
+        self.check_params = check_params
+        self.delay = delay
+        self.offset = offset
+        self.jitter = jitter
+
+class _SQLStatements(object):
+    """
+    """
+
+    version = 1
+
+    create_version_table = """
+CREATE TABLE IF NOT EXISTS version ( version_number INTEGER );
+"""
+
+    create_v1_agent_table = """
+CREATE TABLE IF NOT EXISTS v1_agent (
+    agent_id TEXT,
+    endpoint_url TEXT
+);
+"""
+
+    create_v1_check_table = """
+CREATE TABLE IF NOT EXISTS v1_check (
+    check_id TEXT PRIMARY KEY,
+    check_type TEXT,
+    check_params TEXT,
+    delay INTEGER,
+    offset INTEGER,
+    jitter INTEGER
+);
+"""
+
+    create_v1_metadata_table = """
+CREATE TABLE IF NOT EXISTS v1_metadata (
+    check_id TEXT PRIMARY KEY,
+    name TEXT,
+    value TEXT
+);
+"""
+
+    get_version = "SELECT version_number FROM version WHERE rowid=0;"
+
+    set_version = "INSERT OR REPLACE INTO version ( rowid, version_number ) VALUES ( 0, ? );"
+
+    get_agent_id = "SELECT agent_id from v1_agent WHERE rowid=0;"
+
+    set_agent_id = "INSERT OR REPLACE INTO v1_agent ( rowid, agent_id ) VALUES ( 0, ? );"
+
+    get_endpoint_url = "SELECT endpoint_url from v1_agent WHERE rowid=0;"
+
+    set_endpoint_url = "INSERT OR REPLACE INTO v1_agent ( rowid, endpoint_url ) VALUES ( 0, ? );"
+
+    list_checks = "SELECT check_id, check_type, check_params, delay, offset, jitter FROM v1_check;"
+
+    get_check = "SELECT check_id, check_type, check_params, delay, offset, jitter FROM v1_check WHERE check_id=?;"
+
+    set_check = "INSERT OR REPLACE INTO v1_check (check_id, check_type, check_params, delay, offset, jitter) VALUES ( ?, ?, ?, ?, ?, ?);"
+
+    delete_check = "DELETE FROM v1_check WHERE check_id=?;"
+
+def create_instance(path):
+    """
+    :param path:
+    :type path: pathlib.Path
     :return:
     """
-    flag_creat = bool(flags.get('create', False))
-    flag_excl = bool(flags.get('exclusive', False))
-    checks = [
-        ScheduledCheck('always.healthy', AlwaysHealthy(), 5.0, 0, 0)
-    ]
-    return Instance(path, 'dummy.agent', checks)
+    if path.exists():
+        raise Exception()
+    # create a secure temporary directory
+    temp_dir = tempfile.mkdtemp(prefix=".{0}.".format(path.name), dir=str(path.parent))
+    # initialize the instance inside the temp_dir
+    instance = Instance(pathlib.Path(temp_dir))
+    instance.initialize()
+    instance.close()
+    # move the temp dir into place
+    os.rename(str(temp_dir), str(path))
+    return Instance(path)
+
+def open_instance(path):
+    """
+    :param path:
+    :type path: pathlib.Path
+    :return:
+    """
+    if not path.exists():
+        raise Exception()
+    return Instance(path)

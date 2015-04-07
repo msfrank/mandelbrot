@@ -34,7 +34,8 @@ class TestEvaluator(unittest.TestCase):
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         checks = [self.check1, self.check2, self.check3]
         evaluator = mandelbrot.agent.evaluator.Evaluator(event_loop, checks, executor)
-        event_loop.create_task(evaluator.run_forever())
+        shutdown_signal = asyncio.Event(loop=event_loop)
+        event_loop.create_task(evaluator.run_until_signaled(shutdown_signal))
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
         self.assertEquals(result.result, "check1")
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
@@ -48,7 +49,8 @@ class TestEvaluator(unittest.TestCase):
         executor = concurrent.futures.ProcessPoolExecutor(max_workers=1)
         checks = [self.check1, self.check2, self.check3]
         evaluator = mandelbrot.agent.evaluator.Evaluator(event_loop, checks, executor)
-        event_loop.create_task(evaluator.run_forever())
+        shutdown_signal = asyncio.Event(loop=event_loop)
+        event_loop.create_task(evaluator.run_until_signaled(shutdown_signal))
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
         self.assertEquals(result.result, "check1")
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
@@ -62,7 +64,8 @@ class TestEvaluator(unittest.TestCase):
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         checks = [self.check2, self.failure1]
         evaluator = mandelbrot.agent.evaluator.Evaluator(event_loop, checks, executor)
-        event_loop.create_task(evaluator.run_forever())
+        shutdown_signal = asyncio.Event(loop=event_loop)
+        event_loop.create_task(evaluator.run_until_signaled(shutdown_signal))
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
         self.assertEquals(result.result, "check2")
         failure = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
