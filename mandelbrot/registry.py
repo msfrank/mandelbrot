@@ -10,7 +10,7 @@ class Registry(object):
         self.env = pkg_resources.Environment([])
         plugins,errors = pkg_resources.working_set.find_plugins(self.env)
         for plugin in plugins:
-            working_set.add(plugin)
+            pkg_resources.working_set.add(plugin)
         for error in errors:
             log.info("failed to load distribution: %s", error)
 
@@ -19,23 +19,19 @@ class Registry(object):
         :param check_type:
         :type check_type: str
         :param requirement:
-        :type requirement: pkg_resources.Requirement
+        :type requirement: str
         """
-        entrypoint = None
         # find the entrypoint matching the specified requirement
         if requirement is not None:
             requirement = pkg_resources.Requirement.parse(requirement)
-            distribution = working_set.find(requirement)
-            entrypoint = distribution.load_entry_point('mandelbrot.check', check_type)
+            distribution = pkg_resources.working_set.find(requirement)
+            factory = distribution.load_entry_point('mandelbrot.check', check_type)
         # find the first entry point
         else:
-            entrypoints = working_set.iter_entry_points('mandelbrot.check', check_type)
+            entrypoints = pkg_resources.working_set.iter_entry_points('mandelbrot.check', check_type)
             try:
-                entrypoint = entrypoints.next()
+                factory = next(entrypoints).load()
             except:
-                pass
-        if entrypoint is None:
-            raise Exception("no check found named " + check_type)
-        factory = entrypoint.load()
+                raise Exception("no check found named " + check_type)
         log.debug("loaded factory %s", factory)
         return factory
