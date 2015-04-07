@@ -36,9 +36,13 @@ class Processor(object):
         :param signal:
         :type signal: asyncio.Event
         """
+
+        # get the agent id
+        agent_id = self.instance.get_agent_id()
+
         # build the list of scheduled checks
         scheduled_checks = []
-        for instance_check in instance.list_checks():
+        for instance_check in self.instance.list_checks():
             factory_name, _, requirement = instance_check.check_type.partition(':')
             try:
                 if requirement != '':
@@ -51,14 +55,14 @@ class Processor(object):
                     instance_check.delay, instance_check.offset, instance_check.jitter)
                 scheduled_checks.append(scheduled_check)
             except Exception as e:
-                log.warn("no check registered for type %s", check_type)
+                log.warn("no check registered for type %s", instance_check.check_type)
 
         pending = set()
 
         # create the evaluator and run it in a task
         evaluator = Evaluator(self.event_loop, scheduled_checks, self.executor)
-        evaluator_task = self.event_loop.create_task(self.evaluator.run_until_signaled(signal))
-        pending.add(self.evaluator.next_evaluation())
+        evaluator_task = self.event_loop.create_task(evaluator.run_until_signaled(signal))
+        pending.add(evaluator.next_evaluation())
 
         # create a future to wait for the shutdown signal
         shutdown_signal = self.event_loop.create_task(signal.wait())
@@ -79,14 +83,14 @@ class Processor(object):
                 if isinstance(result, CheckResult):
                     check_id = result.scheduled_check.id
                     evaluation = result.result
-                    log.debug("check %s submits evaluation %s", check_id, evaluation)
-                    f = self.endpoint.submit_evaluation(self.instance.id, check_id, evaluation)
+                    log.debug("check %s submits evaluation %s to %s", check_id, evaluation, agent_id)
+                    f = self.endpoint.submit_evaluation(agent_id, check_id, evaluation)
                     pending.add(f)
-                    pending.add(self.evaluator.next_evaluation())
+                    pending.add(evaluator.next_evaluation())
                 elif isinstance(result, CheckFailed):
                     check_id = result.scheduled_check.id
                     log.debug("check %s failed: %s", check_id, str(result.failure))
-                    pending.add(self.evaluator.next_evaluation())
+                    pending.add(evaluator.next_evaluation())
                 elif isinstance(result, requests.Response):
                     log.debug("endpoint responds %s", result.status_code)
                 elif isinstance(result, Failure):
@@ -99,5 +103,3 @@ class Processor(object):
 
         # wait for evaluator to finish cleaning up
         yield from asyncio.wait_for(evaluator_task, None, loop=self.event_loop)
-        self.evaluator = None
-

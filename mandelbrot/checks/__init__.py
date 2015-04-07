@@ -4,6 +4,7 @@ class Check(object):
     """
     def configure(self, ns):
         pass
+
     def execute(self):
         raise NotImplementedError()
 

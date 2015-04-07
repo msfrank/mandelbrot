@@ -36,8 +36,10 @@ class Instance(object):
     def initialize(self):
         with self.conn as conn:
             conn.execute(_SQLStatements.create_version_table)
-            conn.execute(_SQLStatements.create_v1_agent_table)
+            conn.execute(_SQLStatements.create_v1_agent_id_table)
+            conn.execute(_SQLStatements.create_v1_endpoint_url_table)
             conn.execute(_SQLStatements.create_v1_check_table)
+            conn.execute(_SQLStatements.create_v1_metadata_table)
             cursor = conn.cursor()
             cursor.execute(_SQLStatements.get_version)
             version_number = cursor.fetchone()
@@ -124,13 +126,13 @@ class _SQLStatements(object):
 CREATE TABLE IF NOT EXISTS version ( version_number INTEGER );
 """
 
-    create_v1_agent_table = """
-CREATE TABLE IF NOT EXISTS v1_agent (
-    agent_id TEXT,
-    endpoint_url TEXT
-);
+    create_v1_agent_id_table = """
+CREATE TABLE IF NOT EXISTS v1_agent_id ( agent_id TEXT );
 """
 
+    create_v1_endpoint_url_table = """
+CREATE TABLE IF NOT EXISTS v1_endpoint_url ( endpoint_url TEXT );
+"""
     create_v1_check_table = """
 CREATE TABLE IF NOT EXISTS v1_check (
     check_id TEXT PRIMARY KEY,
@@ -154,13 +156,13 @@ CREATE TABLE IF NOT EXISTS v1_metadata (
 
     set_version = "INSERT OR REPLACE INTO version ( rowid, version_number ) VALUES ( 0, ? );"
 
-    get_agent_id = "SELECT agent_id from v1_agent WHERE rowid=0;"
+    get_agent_id = "SELECT agent_id from v1_agent_id WHERE rowid=0;"
 
-    set_agent_id = "INSERT OR REPLACE INTO v1_agent ( rowid, agent_id ) VALUES ( 0, ? );"
+    set_agent_id = "INSERT OR REPLACE INTO v1_agent_id ( rowid, agent_id ) VALUES ( 0, ? );"
 
-    get_endpoint_url = "SELECT endpoint_url from v1_agent WHERE rowid=0;"
+    get_endpoint_url = "SELECT endpoint_url from v1_endpoint_url WHERE rowid=0;"
 
-    set_endpoint_url = "INSERT OR REPLACE INTO v1_agent ( rowid, endpoint_url ) VALUES ( 0, ? );"
+    set_endpoint_url = "INSERT OR REPLACE INTO v1_endpoint_url ( rowid, endpoint_url ) VALUES ( 0, ? );"
 
     list_checks = "SELECT check_id, check_type, check_params, delay, offset, jitter FROM v1_check;"
 
@@ -177,7 +179,7 @@ def create_instance(path):
     :return:
     """
     if path.exists():
-        raise Exception()
+        raise Exception("failed to create instance {0}: instance exists".format(path))
     # create a secure temporary directory
     temp_dir = tempfile.mkdtemp(prefix=".{0}.".format(path.name), dir=str(path.parent))
     # initialize the instance inside the temp_dir
@@ -195,5 +197,5 @@ def open_instance(path):
     :return:
     """
     if not path.exists():
-        raise Exception()
+        raise Exception("failed to open instance {0}: instance doesn't exist".format(path))
     return Instance(path)

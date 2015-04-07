@@ -16,7 +16,6 @@ class TestInstance(unittest.TestCase):
 
     def tearDown(self):
         if self.tmp_path.exists():
-            print("removing directory " + str(self.tmp_path))
             shutil.rmtree(str(self.tmp_path))
 
     def test_create_instance(self):
