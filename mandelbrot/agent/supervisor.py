@@ -2,6 +2,7 @@ import asyncio
 import signal
 import logging
 import requests
+import pathlib
 
 log = logging.getLogger("mandelbrot.agent.supervisor")
 
@@ -13,19 +14,16 @@ from mandelbrot.instance import open_instance
 class Supervisor(object):
     """
     """
-    def __init__(self, path, endpoint_url, endpoint_executor, check_executor):
+    def __init__(self, path, endpoint_executor, check_executor):
         """
         :param path:
         :type path: str
-        :param endpoint_url:
-        :type endpoint_url: str
         :param endpoint_executor:
         :type endpoint_executor: concurrent.futures.Executor
         :param check_executor:
         :type check_executor: concurrent.futures.Executor
         """
-        self.path = path
-        self.endpoint_url = endpoint_url
+        self.path = pathlib.Path(path)
         self.endpoint_executor = endpoint_executor
         self.check_executor = check_executor
         self.is_finished = False
@@ -45,16 +43,17 @@ class Supervisor(object):
         # load registry plugins
         registry = Registry()
 
-        # create the http endpoint
-        session = requests.Session()
-        endpoint = Endpoint(event_loop, self.endpoint_url, session, self.endpoint_executor)
-
-        # loop forever until is_finished is True 
+        # loop forever until is_finished is True
         try:
             log.debug("--- starting agent process ---")
             while not self.is_finished:
-                # create a new agent and run it forever until it completes
+                # open the instance at the specified path
                 instance = open_instance(self.path)
+                with instance.lock():
+                    endpoint_url = instance.get_endpoint_url()
+                # create the http endpoint
+                session = requests.Session()
+                endpoint = Endpoint(event_loop, endpoint_url, session, self.endpoint_executor)
                 processor = Processor(event_loop, instance, registry, endpoint, self.check_executor)
                 # enable signal catching
                 self.ignore_signals = False
@@ -71,7 +70,6 @@ class Supervisor(object):
             log.debug("shutting down event loop")
             event_loop.stop()
             event_loop.close()
-            event_loop = None
 
     def reload(self, shutdown_signal):
         if not self.ignore_signals:
