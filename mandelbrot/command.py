@@ -24,8 +24,17 @@ def main():
 
         start_instance = subparsers.add_parser('start')
         start_instance.set_defaults(main=mandelbrot.agent.command.start_command)
-        start_instance.add_argument('-f', '--foreground', action='store_true')
-        start_instance.add_argument('-v', '--verbose', action='store_true')
+        start_instance.add_argument('-p', '--pool-workers', metavar='NUM', dest='pool_workers',
+            type=int, default=10, help='Size of the check worker pool')
+        start_instance.add_argument('-l', '--log-file', metavar='PATH', dest='log_file',
+            help='Log to the specified file')
+        start_instance.add_argument('--log-level', metavar='LEVEL', dest='log_level',
+            choices=['DEBUG','INFO','WARNING','ERROR','CRITICAL'], default='INFO',
+            help='Log at the specified level')
+        start_instance.add_argument('-f', '--foreground', action='store_true', dest='foreground',
+            help='Run agent process in the foreground')
+        start_instance.add_argument('-d', '--debug', action='store_true', dest='debug',
+            help='Log at DEBUG level and write to stdout')
         start_instance.add_argument('path', metavar='PATH')
 
         stop_instance = subparsers.add_parser('stop')

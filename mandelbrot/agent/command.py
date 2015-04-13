@@ -10,6 +10,9 @@ import signal
 from mandelbrot.instance import create_instance
 from mandelbrot.agent.supervisor import Supervisor
 
+logging_format="%(asctime)s %(message)s"
+debug_format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+
 def create_command(ns):
     """
 
@@ -17,10 +20,9 @@ def create_command(ns):
     :return:
     """
     if ns.verbose == True:
-        loglevel = logging.DEBUG
+        logging.basicConfig(level=logging.DEBUG, format=debug_format)
     else:
-        loglevel = logging.INFO
-    logging.basicConfig(level=loglevel, format="%(asctime)s %(name)s: %(message)s")
+        logging.basicConfig(level=logging.INFO, format=logging_format)
 
     agent_id = ns.agent_id
     endpoint_url = ns.endpoint_url
@@ -37,14 +39,18 @@ def start_command(ns):
     :param ns:
     :return:
     """
-    if ns.verbose == True:
-        loglevel = logging.DEBUG
+    if ns.debug:
+        logging.basicConfig(level=logging.DEBUG, format=debug_format)
+    elif ns.log_file is not None:
+        logging.basicConfig(level=getattr(logging, ns.log_level),
+            filename=ns.log_file, format=logging_format)
     else:
-        loglevel = logging.INFO
-    logging.basicConfig(level=loglevel, format="%(asctime)s %(name)s: %(message)s")
+        logging.basicConfig(level=getattr(logging, ns.log_level),
+            filename=os.path.join(ns.path, 'agent.log'), format=logging_format)
 
-    endpoint_executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
-    check_executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+    pool_workers = ns.pool_workers
+    endpoint_executor = concurrent.futures.ThreadPoolExecutor(max_workers = pool_workers * 2)
+    check_executor = concurrent.futures.ProcessPoolExecutor(max_workers = pool_workers)
     supervisor = Supervisor(ns.path, endpoint_executor, check_executor)
 
     pidfile = os.path.join(ns.path, 'agent.pid')
@@ -78,9 +84,4 @@ def stop_command(ns):
     :param ns:
     :return:
     """
-    if ns.verbose == True:
-        loglevel = logging.DEBUG
-    else:
-        loglevel = logging.INFO
-    logging.basicConfig(level=loglevel, format="%(asctime)s %(name)s: %(message)s")
     return 0
