@@ -1,5 +1,6 @@
 requests
 lockfile
+psutil
 python-daemon
 pyparsing
 setuptools

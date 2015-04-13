@@ -37,6 +37,11 @@ def main():
             help='Log at DEBUG level and write to stdout')
         start_instance.add_argument('path', metavar='PATH')
 
+        instance_status = subparsers.add_parser('status')
+        instance_status.set_defaults(main=mandelbrot.agent.command.status_command)
+        instance_status.add_argument('-v', '--verbose', action='store_true')
+        instance_status.add_argument('path', metavar='PATH')
+
         stop_instance = subparsers.add_parser('stop')
         stop_instance.set_defaults(main=mandelbrot.agent.command.stop_command)
         stop_instance.add_argument('-v', '--verbose', action='store_true')
@@ -48,4 +53,4 @@ def main():
 
     except Exception as e:
         print("\nUnhandled Exception:\n{0}\n---\n{1}".format(e,traceback.format_exc()), file=sys.stderr, flush=True)
-        sys.exit(1)
+        sys.exit(255)
