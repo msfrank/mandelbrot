@@ -2,11 +2,13 @@ import sys
 import argparse
 import traceback
 
-import mandelbrot.agent.command
+from mandelbrot.commands.init import init_main
+from mandelbrot.commands.start import start_main
+from mandelbrot.commands.status import status_main
+from mandelbrot.commands.stop import stop_main
 
 def main():
     """
-    :return:
     """
     try:
 
@@ -15,15 +17,15 @@ def main():
         parser.set_defaults(main=lambda ns: 0)
         subparsers = parser.add_subparsers()
 
-        create_instance = subparsers.add_parser('create')
-        create_instance.set_defaults(main=mandelbrot.agent.command.create_command)
-        create_instance.add_argument('-i', '--agent-id', metavar='NAME', dest='agent_id')
-        create_instance.add_argument('-u', '--endpoint-url', metavar='URL', dest='endpoint_url')
-        create_instance.add_argument('-v', '--verbose', action='store_true')
-        create_instance.add_argument('path', metavar='PATH')
+        init_instance = subparsers.add_parser('init')
+        init_instance.set_defaults(main=init_main)
+        init_instance.add_argument('-i', '--agent-id', metavar='NAME', dest='agent_id')
+        init_instance.add_argument('-u', '--endpoint-url', metavar='URL', dest='endpoint_url')
+        init_instance.add_argument('-v', '--verbose', action='store_true')
+        init_instance.add_argument('path', metavar='PATH')
 
         start_instance = subparsers.add_parser('start')
-        start_instance.set_defaults(main=mandelbrot.agent.command.start_command)
+        start_instance.set_defaults(main=start_main)
         start_instance.add_argument('-p', '--pool-workers', metavar='NUM', dest='pool_workers',
             type=int, default=10, help='Size of the check worker pool')
         start_instance.add_argument('-l', '--log-file', metavar='PATH', dest='log_file',
@@ -38,18 +40,17 @@ def main():
         start_instance.add_argument('path', metavar='PATH')
 
         instance_status = subparsers.add_parser('status')
-        instance_status.set_defaults(main=mandelbrot.agent.command.status_command)
+        instance_status.set_defaults(main=status_main)
         instance_status.add_argument('-v', '--verbose', action='store_true')
         instance_status.add_argument('path', metavar='PATH')
 
         stop_instance = subparsers.add_parser('stop')
-        stop_instance.set_defaults(main=mandelbrot.agent.command.stop_command)
+        stop_instance.set_defaults(main=stop_main)
         stop_instance.add_argument('-v', '--verbose', action='store_true')
         stop_instance.add_argument('path', metavar='PATH')
 
         ns = parser.parse_args()
         return ns.main(ns)
-
 
     except Exception as e:
         print("\nUnhandled Exception:\n{0}\n---\n{1}".format(e,traceback.format_exc()), file=sys.stderr, flush=True)

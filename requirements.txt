@@ -3,4 +3,5 @@ lockfile
 psutil
 python-daemon
 pyparsing
+cifparser
 setuptools

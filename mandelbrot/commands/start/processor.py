@@ -3,10 +3,10 @@ import concurrent.futures
 import logging
 import requests
 
-log = logging.getLogger("mandelbrot.agent.processor")
+log = logging.getLogger("mandelbrot.commands.start.processor")
 
 from mandelbrot.endpoint import Failure
-from mandelbrot.agent.evaluator import ScheduledCheck, Evaluator, CheckResult, CheckFailed
+from mandelbrot.commands.start.evaluator import ScheduledCheck, Evaluator, CheckResult, CheckFailed
 
 class Processor(object):
     """
