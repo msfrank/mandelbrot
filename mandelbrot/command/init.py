@@ -1,10 +1,10 @@
 import pathlib
 import datetime
-import cifparser
 import logging
+import cifparser
 
 from mandelbrot.instance import create_instance, InstanceCheck
-from mandelbrot.commands import utility_format
+from mandelbrot.log import utility_format
 
 def init_main(ns):
     """

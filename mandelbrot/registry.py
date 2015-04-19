@@ -1,5 +1,5 @@
-import logging
 import pkg_resources
+import logging
 
 log = logging.getLogger("mandelbrot.registry")
 

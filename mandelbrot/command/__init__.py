@@ -2,10 +2,10 @@ import sys
 import argparse
 import traceback
 
-from mandelbrot.commands.init import init_main
-from mandelbrot.commands.start import start_main
-from mandelbrot.commands.status import status_main
-from mandelbrot.commands.stop import stop_main
+from mandelbrot.command.init import init_main
+from mandelbrot.command.start import start_main
+from mandelbrot.command.status import status_main
+from mandelbrot.command.stop import stop_main
 
 def main():
     """
@@ -28,16 +28,16 @@ def main():
         start_instance = subparsers.add_parser('start')
         start_instance.set_defaults(main=start_main)
         start_instance.add_argument('-p', '--pool-workers', metavar='NUM', dest='pool_workers',
-            type=int, default=10, help='Size of the check worker pool')
+                                    type=int, default=10, help='Size of the check worker pool')
         start_instance.add_argument('-l', '--log-file', metavar='PATH', dest='log_file',
-            help='Log to the specified file')
+                                    help='Log to the specified file')
         start_instance.add_argument('--log-level', metavar='LEVEL', dest='log_level',
-            choices=['DEBUG','INFO','WARNING','ERROR','CRITICAL'], default='INFO',
-            help='Log at the specified level')
+                                    choices=['DEBUG','INFO','WARNING','ERROR','CRITICAL'], default='INFO',
+                                    help='Log at the specified level')
         start_instance.add_argument('-f', '--foreground', action='store_true', dest='foreground',
-            help='Run agent process in the foreground')
+                                    help='Run agent process in the foreground')
         start_instance.add_argument('-d', '--debug', action='store_true', dest='debug',
-            help='Log at DEBUG level and write to stdout')
+                                    help='Log at DEBUG level and write to stdout')
         start_instance.add_argument('path', metavar='PATH')
 
         instance_status = subparsers.add_parser('status')

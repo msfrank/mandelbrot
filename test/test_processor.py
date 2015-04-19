@@ -11,8 +11,8 @@ import requests_mock
 
 from mandelbrot.instance import create_instance, InstanceCheck
 from mandelbrot.registry import Registry
-from mandelbrot.commands.start.processor import Processor
-from mandelbrot.commands.start.endpoint import Endpoint
+from mandelbrot.command.start.processor import Processor
+from mandelbrot.command.start.endpoint import Endpoint
 
 class TestProcessor(unittest.TestCase):
 

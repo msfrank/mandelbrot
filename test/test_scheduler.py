@@ -3,7 +3,7 @@ import bootstrap
 import unittest
 import asyncio
 
-import mandelbrot.commands.start.scheduler
+import mandelbrot.command.start.scheduler
 
 class TestScheduler(unittest.TestCase):
 
@@ -17,7 +17,7 @@ class TestScheduler(unittest.TestCase):
     def test_schedule_tasks_in_order(self):
         "A Scheduler should schedule tasks in order"
         event_loop = asyncio.new_event_loop()
-        scheduler = mandelbrot.commands.start.scheduler.Scheduler(event_loop)
+        scheduler = mandelbrot.command.start.scheduler.Scheduler(event_loop)
         scheduler.schedule_task(self.f1, 1.0, 0.2, 0.0)
         scheduler.schedule_task(self.f2, 1.0, 0.4, 0.0)
         scheduler.schedule_task(self.f3, 1.0, 0.6, 0.0)
@@ -31,7 +31,7 @@ class TestScheduler(unittest.TestCase):
     def test_schedule_tasks_out_of_order(self):
         "A Scheduler should schedule tasks in order when submitted out of order"
         event_loop = asyncio.new_event_loop()
-        scheduler = mandelbrot.commands.start.scheduler.Scheduler(event_loop)
+        scheduler = mandelbrot.command.start.scheduler.Scheduler(event_loop)
         scheduler.schedule_task(self.f1, 3.0, 0.0, 0.0)
         scheduler.schedule_task(self.f2, 3.0, 1.2, 0.0)
         scheduler.schedule_task(self.f3, 3.0, 0.6, 0.0)
@@ -45,7 +45,7 @@ class TestScheduler(unittest.TestCase):
     def test_unschedule_task(self):
         "A Scheduler should remove an unscheduled task"
         event_loop = asyncio.new_event_loop()
-        scheduler = mandelbrot.commands.start.scheduler.Scheduler(event_loop)
+        scheduler = mandelbrot.command.start.scheduler.Scheduler(event_loop)
         scheduler.schedule_task(self.f1, 3.0, 0.0, 0.0)
         scheduler.schedule_task(self.f2, 3.0, 0.5, 0.0)
         scheduler.schedule_task(self.f3, 3.0, 1.0, 0.0)

@@ -2,11 +2,12 @@ import os
 import pathlib
 import logging
 import psutil
+import signal
 import errno
 
-from mandelbrot.commands import utility_format
+from mandelbrot.log import utility_format
 
-def status_main(ns):
+def stop_main(ns):
     """
     """
     if ns.verbose == True:
@@ -26,7 +27,8 @@ def status_main(ns):
         if not psutil.pid_exists(pid):
             print("agent {0} not running, but a stale pidfile exists at {1}".format(ns.path, pidfile))
             return 1
-        print("agent {0} running with pid {1}".format(ns.path, pid))
+        os.kill(pid, signal.SIGTERM)
+        log.debug("sent SIGTERM to pid %s", pid)
         return 0
     except OSError as e:
         if e.errno == errno.ENOENT:

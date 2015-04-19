@@ -2,12 +2,29 @@ import os
 import sys
 import concurrent.futures
 import logging
+import contextlib
 import daemon
 import lockfile
 import signal
 
-from mandelbrot.commands import daemon_format, debug_format, with_timeout
-from mandelbrot.commands.start.supervisor import Supervisor
+from mandelbrot.log import daemon_format, debug_format
+from mandelbrot.command.start.supervisor import Supervisor
+
+
+@contextlib.contextmanager
+def with_timeout(timeout, lock):
+    """
+    wraps the specified lockfile and calls acquire with a timeout.
+
+    :param timeout:
+    :type timeout: float
+    :param lock:
+    :type lock: lockfile.LockFile
+    :return:
+    """
+    lock.acquire(timeout)
+    yield lock
+    lock.release()
 
 def start_main(ns):
     """

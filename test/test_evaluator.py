@@ -4,7 +4,7 @@ import unittest
 import asyncio
 import concurrent.futures
 
-import mandelbrot.commands.start.evaluator
+import mandelbrot.command.start.evaluator
 
 class Check(object):
     def __init__(self, s):
@@ -20,20 +20,20 @@ class Failure(object):
 
 class TestEvaluator(unittest.TestCase):
 
-    check1 = mandelbrot.commands.start.evaluator.ScheduledCheck('id1', Check("check1"), 1.2, 0.0, 0.0)
+    check1 = mandelbrot.command.start.evaluator.ScheduledCheck('id1', Check("check1"), 1.2, 0.0, 0.0)
 
-    check2 = mandelbrot.commands.start.evaluator.ScheduledCheck('id2', Check("check2"), 1.2, 0.4, 0.0)
+    check2 = mandelbrot.command.start.evaluator.ScheduledCheck('id2', Check("check2"), 1.2, 0.4, 0.0)
 
-    check3 = mandelbrot.commands.start.evaluator.ScheduledCheck('id3', Check("check3"), 1.2, 0.8, 0.0)
+    check3 = mandelbrot.command.start.evaluator.ScheduledCheck('id3', Check("check3"), 1.2, 0.8, 0.0)
 
-    failure1 = mandelbrot.commands.start.evaluator.ScheduledCheck('id4', Failure("failure1"), 1.0, 1.0, 0.0)
+    failure1 = mandelbrot.command.start.evaluator.ScheduledCheck('id4', Failure("failure1"), 1.0, 1.0, 0.0)
     
     def test_evaluate_checks_using_thread_pool(self):
         "An Evaluator should submit checks to a ThreadPoolExecutor and return the result"
         event_loop = asyncio.new_event_loop()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         checks = [self.check1, self.check2, self.check3]
-        evaluator = mandelbrot.commands.start.evaluator.Evaluator(event_loop, checks, executor)
+        evaluator = mandelbrot.command.start.evaluator.Evaluator(event_loop, checks, executor)
         shutdown_signal = asyncio.Event(loop=event_loop)
         event_loop.create_task(evaluator.run_until_signaled(shutdown_signal))
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
@@ -48,7 +48,7 @@ class TestEvaluator(unittest.TestCase):
         event_loop = asyncio.new_event_loop()
         executor = concurrent.futures.ProcessPoolExecutor(max_workers=1)
         checks = [self.check1, self.check2, self.check3]
-        evaluator = mandelbrot.commands.start.evaluator.Evaluator(event_loop, checks, executor)
+        evaluator = mandelbrot.command.start.evaluator.Evaluator(event_loop, checks, executor)
         shutdown_signal = asyncio.Event(loop=event_loop)
         event_loop.create_task(evaluator.run_until_signaled(shutdown_signal))
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
@@ -63,13 +63,13 @@ class TestEvaluator(unittest.TestCase):
         event_loop = asyncio.new_event_loop()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         checks = [self.check2, self.failure1]
-        evaluator = mandelbrot.commands.start.evaluator.Evaluator(event_loop, checks, executor)
+        evaluator = mandelbrot.command.start.evaluator.Evaluator(event_loop, checks, executor)
         shutdown_signal = asyncio.Event(loop=event_loop)
         event_loop.create_task(evaluator.run_until_signaled(shutdown_signal))
         result = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
         self.assertEquals(result.result, "check2")
         failure = event_loop.run_until_complete(asyncio.wait_for(evaluator.next_evaluation(), 5.0, loop=event_loop))
-        self.assertIsInstance(failure, mandelbrot.commands.start.evaluator.CheckFailed)
+        self.assertIsInstance(failure, mandelbrot.command.start.evaluator.CheckFailed)
         self.assertIs(failure.scheduled_check, self.failure1)
         self.assertIsInstance(failure.failure, Exception)
         self.assertEquals(str(failure.failure), "failure1")

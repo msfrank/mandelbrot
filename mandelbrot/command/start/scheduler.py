@@ -2,7 +2,7 @@ import asyncio
 import random
 import logging
 
-log = logging.getLogger("mandelbrot.commands.start.scheduler")
+log = logging.getLogger("mandelbrot.command.start.scheduler")
 
 class Scheduler(object):
     """

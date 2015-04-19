@@ -4,11 +4,11 @@ import logging
 import requests
 import pathlib
 
-log = logging.getLogger("mandelbrot.commands.start.supervisor")
+log = logging.getLogger("mandelbrot.command.start.supervisor")
 
 from mandelbrot.registry import Registry
-from mandelbrot.commands.start.endpoint import Endpoint
-from mandelbrot.commands.start.processor import Processor
+from mandelbrot.command.start.endpoint import Endpoint
+from mandelbrot.command.start.processor import Processor
 from mandelbrot.instance import open_instance
 
 class Supervisor(object):
