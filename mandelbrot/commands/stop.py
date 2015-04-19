@@ -1,13 +1,11 @@
 import os
-import sys
 import pathlib
 import logging
 import psutil
 import signal
 import errno
 
-from mandelbrot.instance import create_instance
-from mandelbort.commands import utility_format
+from mandelbrot.commands import utility_format
 
 def stop_main(ns):
     """

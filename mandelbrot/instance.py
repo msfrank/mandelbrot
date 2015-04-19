@@ -4,6 +4,8 @@ import logging
 import lockfile
 import sqlite3
 import tempfile
+import json
+import cifparser
 
 log = logging.getLogger("mandelbrot.instance")
 
@@ -37,6 +39,7 @@ class Instance(object):
         with self.conn as conn:
             conn.execute(_SQLStatements.create_version_table)
             conn.execute(_SQLStatements.create_v1_agent_id_table)
+            conn.execute(_SQLStatements.create_v1_manifest_url_table)
             conn.execute(_SQLStatements.create_v1_endpoint_url_table)
             conn.execute(_SQLStatements.create_v1_check_table)
             conn.execute(_SQLStatements.create_v1_metadata_table)
@@ -56,12 +59,25 @@ class Instance(object):
             cursor.execute(_SQLStatements.get_agent_id)
             results = cursor.fetchone()
             if results is not None:
-                return results[0]
+                return str(results[0])
             return None
 
     def set_agent_id(self, agent_id):
         with self.conn as conn:
             conn.execute(_SQLStatements.set_agent_id, (agent_id,))
+
+    def get_manifest_url(self):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.get_manifest_url)
+            results = cursor.fetchone()
+            if results is not None:
+                return str(results[0])
+            return None
+
+    def set_manifest_url(self, manifest_url):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.set_manifest_url, (manifest_url,))
 
     def get_endpoint_url(self):
         with self.conn as conn:
@@ -69,19 +85,55 @@ class Instance(object):
             cursor.execute(_SQLStatements.get_endpoint_url)
             results = cursor.fetchone()
             if results is not None:
-                return results[0]
+                return str(results[0])
             return None
 
     def set_endpoint_url(self, endpoint_url):
         with self.conn as conn:
             conn.execute(_SQLStatements.set_endpoint_url, (endpoint_url,))
 
+    def list_metadata(self):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.list_metadata)
+            results = cursor.fetchall()
+        for meta_name, meta_value in results:
+            yield (str(meta_name), str(meta_value))
+
+    def get_meta_value(self, meta_name):
+        with self.conn as conn:
+            cursor = conn.cursor()
+            cursor.execute(_SQLStatements.get_meta_value, (meta_name,))
+            results = cursor.fetchone()
+            if results is not None:
+                return str(results[0])
+            return None
+
+    def set_meta_value(self, meta_name, meta_value):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.set_meta_value, (meta_name, meta_value))
+
+    def delete_meta_value(self, meta_name):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.delete_meta_value, (meta_name,))
+
+    def flush_metadata(self):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.flush_metadata)
+
     def list_checks(self):
         with self.conn as conn:
             cursor = conn.cursor()
             cursor.execute(_SQLStatements.list_checks)
-            for check_id, check_type, check_params, delay, offset, jitter in cursor.fetchall():
-                yield InstanceCheck(check_id, check_type, check_params, delay, offset, jitter)
+            results = cursor.fetchall()
+        for check_id, check_type, check_params, delay, offset, jitter in results:
+            check_id = cifparser.make_path(check_id)
+            check_type = str(check_type)
+            check_params = cifparser.Namespace(cifparser.load(json.loads(check_params)))
+            delay = float(delay)
+            offset = float(offset)
+            jitter = float(jitter)
+            yield InstanceCheck(check_id, check_type, check_params, delay, offset, jitter)
 
     def get_check(self, check_id):
         with self.conn as conn:
@@ -89,25 +141,45 @@ class Instance(object):
             cursor.execute(_SQLStatements.get_check, (check_id,))
             results = cursor.fetchone()
             if results is not None:
-                check_id, check_type, check_params, delay, offset, jitter = results
+                check_id = cifparser.make_path(results[0])
+                check_type = str(results[1])
+                check_params = cifparser.Namespace(cifparser.load(json.loads(results[2])))
+                delay = float(results[3])
+                offset = float(results[4])
+                jitter = float(results[5])
                 return InstanceCheck(check_id, check_type, check_params, delay, offset, jitter)
             return None
 
     def set_check(self, instance_check):
         with self.conn as conn:
-            conn.execute(_SQLStatements.set_check, (instance_check.check_id,
-                instance_check.check_type, instance_check.check_params, instance_check.delay,
-                instance_check.offset, instance_check.jitter))
+            check_id = str(instance_check.check_id)
+            check_type = str(instance_check.check_type)
+            check_params = json.dumps(cifparser.dump(instance_check.check_params.values))
+            delay = float(instance_check.delay)
+            offset = float(instance_check.offset)
+            jitter = float(instance_check.jitter)
+            conn.execute(_SQLStatements.set_check, (check_id, check_type,
+                check_params, delay, offset, jitter))
 
     def delete_check(self, check_id):
         with self.conn as conn:
             conn.execute(_SQLStatements.delete_check, (check_id,))
+
+    def flush_checks(self):
+        with self.conn as conn:
+            conn.execute(_SQLStatements.flush_checks)
 
 class InstanceCheck(object):
     """
     """
     def __init__(self, check_id, check_type, check_params, delay, offset, jitter):
         """
+        :type check_id: cifparser.Path
+        :type check_type: str
+        :type check_params: cifparser.Namespace
+        :type delay: float
+        :type offset: float
+        :type jitter: float
         """
         self.check_id = check_id
         self.check_type = check_type
@@ -130,24 +202,28 @@ CREATE TABLE IF NOT EXISTS version ( version_number INTEGER );
 CREATE TABLE IF NOT EXISTS v1_agent_id ( agent_id TEXT );
 """
 
+    create_v1_manifest_url_table = """
+CREATE TABLE IF NOT EXISTS v1_manifest_url ( manifest_url TEXT );
+"""
+
     create_v1_endpoint_url_table = """
 CREATE TABLE IF NOT EXISTS v1_endpoint_url ( endpoint_url TEXT );
 """
+
     create_v1_check_table = """
 CREATE TABLE IF NOT EXISTS v1_check (
     check_id TEXT PRIMARY KEY,
     check_type TEXT,
     check_params TEXT,
-    delay INTEGER,
-    offset INTEGER,
-    jitter INTEGER
+    delay REAL,
+    offset REAL,
+    jitter REAL
 );
 """
 
     create_v1_metadata_table = """
 CREATE TABLE IF NOT EXISTS v1_metadata (
-    check_id TEXT PRIMARY KEY,
-    name TEXT,
+    name TEXT PRIMARY KEY,
     value TEXT
 );
 """
@@ -160,9 +236,23 @@ CREATE TABLE IF NOT EXISTS v1_metadata (
 
     set_agent_id = "INSERT OR REPLACE INTO v1_agent_id ( rowid, agent_id ) VALUES ( 0, ? );"
 
+    get_manifest_url = "SELECT manifest_url from v1_manifest_url WHERE rowid=0;"
+
+    set_manifest_url = "INSERT OR REPLACE INTO v1_manifest_url ( rowid, manifest_url ) VALUES ( 0, ? );"
+
     get_endpoint_url = "SELECT endpoint_url from v1_endpoint_url WHERE rowid=0;"
 
     set_endpoint_url = "INSERT OR REPLACE INTO v1_endpoint_url ( rowid, endpoint_url ) VALUES ( 0, ? );"
+
+    list_metadata = "SELECT name, value FROM v1_metadata;"
+
+    get_meta_value = "SELECT value FROM v1_metadata WHERE name=?;"
+
+    set_meta_value = "INSERT OR REPLACE INTO v1_metadata (name, value) VALUES ( ?, ?);"
+
+    delete_meta_value = "DELETE FROM v1_metadata WHERE name=?;"
+
+    flush_metadata = "DELETE FROM v1_metadata;"
 
     list_checks = "SELECT check_id, check_type, check_params, delay, offset, jitter FROM v1_check;"
 
@@ -171,6 +261,8 @@ CREATE TABLE IF NOT EXISTS v1_metadata (
     set_check = "INSERT OR REPLACE INTO v1_check (check_id, check_type, check_params, delay, offset, jitter) VALUES ( ?, ?, ?, ?, ?, ?);"
 
     delete_check = "DELETE FROM v1_check WHERE check_id=?;"
+
+    flush_checks = "DELETE FROM v1_check;"
 
 def create_instance(path):
     """

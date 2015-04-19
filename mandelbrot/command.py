@@ -20,6 +20,7 @@ def main():
         init_instance = subparsers.add_parser('init')
         init_instance.set_defaults(main=init_main)
         init_instance.add_argument('-i', '--agent-id', metavar='NAME', dest='agent_id')
+        init_instance.add_argument('-m', '--manifest', metavar='PATH', dest='manifest_path')
         init_instance.add_argument('-u', '--endpoint-url', metavar='URL', dest='endpoint_url')
         init_instance.add_argument('-v', '--verbose', action='store_true')
         init_instance.add_argument('path', metavar='PATH')

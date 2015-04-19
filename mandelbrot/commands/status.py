@@ -1,13 +1,10 @@
 import os
-import sys
 import pathlib
 import logging
 import psutil
 import errno
 
-from mandelbrot.instance import create_instance
 from mandelbrot.commands import utility_format
-from mandelbrot.agent.supervisor import Supervisor
 
 def status_main(ns):
     """
