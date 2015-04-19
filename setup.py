@@ -51,7 +51,7 @@ setup(
             'mandelbrot=mandelbrot.command:main',
             ],
         'mandelbrot.check': [
-            'AlwaysHealthy=mandelbrot.checks.dummy:AlwaysHealthy',
+            'AlwaysHealthy=mandelbrot.check.dummy:AlwaysHealthy',
             ],
         },
     # test dependencies
