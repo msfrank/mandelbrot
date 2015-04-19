@@ -59,10 +59,11 @@ class Instance(object):
             cursor.execute(_SQLStatements.get_agent_id)
             results = cursor.fetchone()
             if results is not None:
-                return str(results[0])
+                return cifparser.make_path(results[0])
             return None
 
     def set_agent_id(self, agent_id):
+        assert isinstance(agent_id, cifparser.Path)
         with self.conn as conn:
             conn.execute(_SQLStatements.set_agent_id, (agent_id,))
 

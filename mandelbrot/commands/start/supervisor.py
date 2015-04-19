@@ -58,7 +58,13 @@ class Supervisor(object):
                 # enable signal catching
                 self.ignore_signals = False
                 # wait until the processor completes
-                event_loop.run_until_complete(processor.run_until_signaled(shutdown_signal))
+                run_processor_until_signaled = processor.run_until_signaled(shutdown_signal)
+                try:
+                    event_loop.run_until_complete(run_processor_until_signaled)
+                except Exception as e:
+                    log.exception("processor throws exception: %s", e)
+                    self.is_finished = True
+                    self.ignore_signals = True
                 # release resources
                 instance.close()
                 # reset the shutdown signal event

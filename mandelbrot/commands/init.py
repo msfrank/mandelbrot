@@ -1,8 +1,6 @@
 import pathlib
-import urllib.parse
-import urllib.request
+import datetime
 import cifparser
-from cifparser.converters import str_to_float
 import logging
 
 from mandelbrot.instance import create_instance, InstanceCheck
@@ -20,9 +18,9 @@ def init_main(ns):
     agent_id = ns.agent_id
     manifest_path = ns.manifest_path
     endpoint_url = ns.endpoint_url
-    default_interval = 60.0
-    default_offset = 0.0
-    default_jitter = 0.0
+    default_interval = datetime.timedelta(seconds=60)
+    default_offset = datetime.timedelta(seconds=0)
+    default_jitter = datetime.timedelta(seconds=0)
 
     # determine the manifest url
     manifest_path = pathlib.Path(manifest_path).absolute()
@@ -43,10 +41,18 @@ def init_main(ns):
             check_id = cifparser.make_path(path, name)
             if container.contains_field(cifparser.ROOT_PATH, 'type'):
                 check_fields = container.get_container_fields(cifparser.ROOT_PATH)
-                check_type = check_fields.pop('type')
-                interval = str_to_float(check_fields.pop('interval', default_interval))
-                offset = str_to_float(check_fields.pop('offset', default_jitter))
-                jitter = str_to_float(check_fields.pop('jitter', default_offset))
+                check_params = cifparser.Namespace(cifparser.load(check_fields))
+                check_type = check_params.get_flattened(cifparser.ROOT_PATH, 'type')
+                check_fields.pop('type', None)
+                interval = check_params.get_timedelta_or_default(cifparser.ROOT_PATH,
+                    'interval', default_interval).total_seconds()
+                check_fields.pop('interval', None)
+                offset = check_params.get_timedelta_or_default(cifparser.ROOT_PATH,
+                    'offset', default_jitter).total_seconds()
+                check_fields.pop('offset', None)
+                jitter = check_params.get_timedelta_or_default(cifparser.ROOT_PATH,
+                    'jitter', default_offset).total_seconds()
+                check_fields.pop('jitter', None)
                 check_params = cifparser.Namespace(cifparser.load(check_fields))
                 instance_check = InstanceCheck(check_id, check_type, check_params, interval, offset, jitter)
                 instance_checks.append(instance_check)

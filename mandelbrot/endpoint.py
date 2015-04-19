@@ -96,3 +96,27 @@ class Failure(object):
         if self.response is not None:
             return "Failure({0})".format(str(self.response))
         return str(self)
+
+class EndpointException(Exception):
+    pass
+
+class BadRequest(EndpointException):
+    pass
+
+class Conflict(EndpointException):
+    pass
+
+class Forbidden(EndpointException):
+    pass
+
+class InternalError(EndpointException):
+    pass
+
+class NotImplemented(EndpointException):
+    pass
+
+class ResourceNotFound(EndpointException):
+    pass
+
+class RetryLater(EndpointException):
+    pass

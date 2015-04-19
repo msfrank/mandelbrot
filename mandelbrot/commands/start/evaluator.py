@@ -77,10 +77,10 @@ class Evaluator(object):
 class ScheduledCheck(object):
     """
     """
-    def __init__(self, id, check, delay, offset, jitter):
+    def __init__(self, check_id, check, delay, offset, jitter):
         """
-        :param id:
-        :type id: str
+        :param check_id:
+        :type check_id: str
         :param check:
         :type check: mandelbrot.checks.Check
         :param delay:
@@ -90,7 +90,7 @@ class ScheduledCheck(object):
         :param jitter:
         :type jitter: float
         """
-        self.id = id
+        self.check_id = check_id
         self.check = check
         self.delay = delay
         self.offset = offset
