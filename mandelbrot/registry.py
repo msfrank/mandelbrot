@@ -3,6 +3,9 @@ import logging
 
 log = logging.getLogger("mandelbrot.registry")
 
+from mandelbrot import versionstring
+require_mandelbrot = 'mandelbrot == ' + versionstring()
+
 class Registry(object):
     """
     """
@@ -14,24 +17,23 @@ class Registry(object):
         for error in errors:
             log.info("failed to load distribution: %s", error)
 
-    def lookup_check(self, check_type, requirement=None):
+    def lookup_factory(self, entry_point_type, factory_name, factory_type, requirement=require_mandelbrot):
         """
-        :param check_type:
-        :type check_type: str
+        :param entry_point_type:
+        :type entry_point_type: str
+        :param factory_name:
+        :type factory_name: str
+        :param factory_type:
+        :type factory_type: type
         :param requirement:
         :type requirement: str
         """
         # find the entrypoint matching the specified requirement
-        if requirement is not None:
-            requirement = pkg_resources.Requirement.parse(requirement)
-            distribution = pkg_resources.working_set.find(requirement)
-            factory = distribution.load_entry_point('mandelbrot.check', check_type)
-        # find the first entry point
-        else:
-            entrypoints = pkg_resources.working_set.iter_entry_points('mandelbrot.check', check_type)
-            try:
-                factory = next(entrypoints).load()
-            except:
-                raise Exception("no check found named " + check_type)
-        log.debug("loaded factory %s", factory)
+        requirement = pkg_resources.Requirement.parse(requirement)
+        distribution = pkg_resources.working_set.find(requirement)
+        factory = distribution.load_entry_point(entry_point_type, factory_name)
+        log.debug("loaded factory %s.%s", factory.__module__, factory.__class__.__name__)
+        if not issubclass(factory, factory_type):
+            raise TypeError("{}.{} is not a subclass of {}".format(
+                factory.__module__, factory.__class__.__name__, factory_type.__name__))
         return factory

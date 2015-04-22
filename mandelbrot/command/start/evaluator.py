@@ -4,6 +4,8 @@ import logging
 
 log = logging.getLogger("mandelbrot.command.start.evaluator")
 
+import mandelbrot.check
+import mandelbrot.registry
 from mandelbrot.command.start.scheduler import Scheduler
 
 class Evaluator(object):
@@ -127,3 +129,24 @@ class CheckFailed(object):
         """
         self.scheduled_check = scheduled_check
         self.failure = failure
+
+def make_scheduled_check(instance_check, registry):
+    """
+
+    :param instance_check:
+    :type instance_check: mandelbrot.instance.InstanceCheck
+    :param registry:
+    :type registry: mandelbrot.registry.Registry
+    :rtype: ScheduledCheck
+    """
+    factory_name, _, requirement = instance_check.check_type.partition(':')
+    if requirement == '':
+        requirement = mandelbrot.registry.require_mandelbrot
+    check_factory = registry.lookup_factory(mandelbrot.check.entry_point_type,
+        factory_name, mandelbrot.check.Check, requirement)
+    check = check_factory(instance_check.check_params)
+    log.debug("instantiating check %s with requirement '%s'",
+        instance_check.check_id, instance_check.check_type)
+    scheduled_check = ScheduledCheck(instance_check.check_id, check,
+        instance_check.delay, instance_check.offset, instance_check.jitter)
+    return scheduled_check

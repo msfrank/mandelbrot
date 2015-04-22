@@ -1,9 +1,11 @@
 import cifparser
 
+entry_point_type = 'mandelbrot.check'
+
 class Check(object):
     """
     """
-    def __init__(self, ns):
+    def __init__(self, ns, **kwargs):
         """
 
         :param ns:

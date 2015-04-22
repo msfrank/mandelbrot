@@ -12,7 +12,7 @@ log = logging.getLogger("mandelbrot.command.start.processor")
 from mandelbrot.model.registration import Registration
 from mandelbrot.model.check import Check
 from mandelbrot.endpoint import Failure
-from mandelbrot.command.start.evaluator import ScheduledCheck, Evaluator, CheckResult, CheckFailed
+from mandelbrot.command.start.evaluator import make_scheduled_check, Evaluator, CheckResult, CheckFailed
 
 default_join_timeout = datetime.timedelta(minutes=5)
 default_probe_timeout = datetime.timedelta(minutes=1)
@@ -60,15 +60,7 @@ class Processor(object):
         for instance_check in checks:
             factory_name, _, requirement = instance_check.check_type.partition(':')
             try:
-                if requirement != '':
-                    check_factory = self.registry.lookup_check(factory_name, requirement)
-                else:
-                    check_factory = self.registry.lookup_check(factory_name)
-                check = check_factory(instance_check.check_params)
-                log.debug("instantiating check %s with requirement '%s'", instance_check.check_id,
-                    instance_check.check_type)
-                scheduled_check = ScheduledCheck(instance_check.check_id, check,
-                    instance_check.delay, instance_check.offset, instance_check.jitter)
+                scheduled_check = make_scheduled_check(instance_check, self.registry)
                 scheduled_checks.append(scheduled_check)
             except Exception as e:
                 log.warn("no check registered for type %s", instance_check.check_type)
