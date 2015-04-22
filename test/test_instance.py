@@ -4,6 +4,7 @@ import unittest
 import pathlib
 import tempfile
 import shutil
+import cifparser
 
 import mandelbrot.instance
 
@@ -55,8 +56,8 @@ class TestInstance(unittest.TestCase):
         "Setting the agent id for an instance should succeed"
         path = pathlib.Path(self.tmp_path, 'agent')
         instance = mandelbrot.instance.create_instance(path)
-        instance.set_agent_id('foo')
-        self.assertEqual(instance.get_agent_id(), 'foo')
+        instance.set_agent_id(cifparser.make_path('foo'))
+        self.assertEqual(instance.get_agent_id(), cifparser.make_path('foo'))
         instance.close()
 
     def test_get_endpoint_url(self):

@@ -7,12 +7,12 @@ import requests
 
 from cifparser import or_default
 
-log = logging.getLogger("mandelbrot.command.start.processor")
+log = logging.getLogger("mandelbrot.agent.processor")
 
 from mandelbrot.model.registration import Registration
 from mandelbrot.model.check import Check
 from mandelbrot.endpoint import Failure
-from mandelbrot.command.start.evaluator import make_scheduled_check, Evaluator, CheckResult, CheckFailed
+from mandelbrot.agent.evaluator import make_scheduled_check, Evaluator, CheckResult, CheckFailed
 
 default_join_timeout = datetime.timedelta(minutes=5)
 default_probe_timeout = datetime.timedelta(minutes=1)

@@ -8,11 +8,12 @@ import shutil
 import tempfile
 import requests
 import requests_mock
+import cifparser
 
 from mandelbrot.instance import create_instance, InstanceCheck
 from mandelbrot.registry import Registry
-from mandelbrot.command.start.processor import Processor
-from mandelbrot.command.start.endpoint import Endpoint
+from mandelbrot.agent.processor import Processor
+from mandelbrot.agent.endpoint import Endpoint
 
 class TestProcessor(unittest.TestCase):
 
@@ -31,8 +32,9 @@ class TestProcessor(unittest.TestCase):
         event_loop = asyncio.new_event_loop()
         instance = create_instance(pathlib.Path(self.instance_path, "agent"))
         instance.set_endpoint_url(self.url)
-        instance.set_agent_id("test.processor")
-        instance.set_check(InstanceCheck('always.healthy', 'AlwaysHealthy', None, 1.0, 0, 0))
+        instance.set_agent_id(cifparser.make_path("test.processor"))
+        instance.set_check(InstanceCheck(cifparser.make_path('always.healthy'),
+            'AlwaysHealthy', cifparser.Namespace(cifparser.ValueTree()), 1.0, 0, 0))
         registry = Registry()
         submitted = []
         def text_callback(request, context):

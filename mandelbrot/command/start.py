@@ -8,8 +8,7 @@ import lockfile
 import signal
 
 from mandelbrot.log import daemon_format, debug_format
-from mandelbrot.command.start.supervisor import Supervisor
-
+from mandelbrot.agent.supervisor import Supervisor
 
 @contextlib.contextmanager
 def with_timeout(timeout, lock):

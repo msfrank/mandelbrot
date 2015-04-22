@@ -2,7 +2,7 @@ import asyncio
 import requests
 import logging
 
-log = logging.getLogger("mandelbrot.command.start.endpoint")
+log = logging.getLogger("mandelbrot.agent.endpoint")
 
 import mandelbrot.endpoint
 

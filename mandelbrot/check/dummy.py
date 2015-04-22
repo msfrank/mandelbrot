@@ -1,4 +1,4 @@
-from mandelbrot.checks import Check
+from mandelbrot.check import Check
 from mandelbrot.model.evaluation import Evaluation, HEALTHY
 
 class AlwaysHealthy(Check):

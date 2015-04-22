@@ -65,7 +65,7 @@ class Instance(object):
     def set_agent_id(self, agent_id):
         assert isinstance(agent_id, cifparser.Path)
         with self.conn as conn:
-            conn.execute(_SQLStatements.set_agent_id, (agent_id,))
+            conn.execute(_SQLStatements.set_agent_id, (str(agent_id),))
 
     def get_manifest_url(self):
         with self.conn as conn:

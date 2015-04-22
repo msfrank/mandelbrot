@@ -6,7 +6,7 @@ import concurrent.futures
 import requests
 import requests_mock
 
-import mandelbrot.command.start.endpoint
+import mandelbrot.agent.endpoint
 import mandelbrot.endpoint
 
 class TestEndpoint(unittest.TestCase):
@@ -23,7 +23,7 @@ class TestEndpoint(unittest.TestCase):
         session = requests.Session()
         session.mount('mock', mock)
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        endpoint = mandelbrot.command.start.endpoint.Endpoint(event_loop, self.url, session, executor)
+        endpoint = mandelbrot.agent.endpoint.Endpoint(event_loop, self.url, session, executor)
         future = asyncio.wait_for(endpoint.get_agent('localhost.localdomain'), 5.0, loop=event_loop)
         response = event_loop.run_until_complete(future)
         self.assertIsInstance(response, requests.Response)

@@ -2,11 +2,11 @@ import asyncio
 import concurrent.futures
 import logging
 
-log = logging.getLogger("mandelbrot.command.start.evaluator")
+log = logging.getLogger("mandelbrot.agent.evaluator")
 
 import mandelbrot.check
 import mandelbrot.registry
-from mandelbrot.command.start.scheduler import Scheduler
+from mandelbrot.agent.scheduler import Scheduler
 
 class Evaluator(object):
     """
