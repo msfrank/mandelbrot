@@ -1,4 +1,5 @@
 import pathlib
+import urllib.parse
 import datetime
 import logging
 import cifparser
@@ -15,9 +16,9 @@ def init_main(ns):
         logging.basicConfig(level=logging.INFO, format=utility_format)
     log = logging.getLogger('mandelbrot')
 
-    agent_id = ns.agent_id
+    agent_id = cifparser.make_path(ns.agent_id)
     manifest_path = ns.manifest_path
-    endpoint_url = ns.endpoint_url
+    endpoint_url = urllib.parse.urlparse(ns.endpoint_url)
     default_interval = datetime.timedelta(seconds=60)
     default_offset = datetime.timedelta(seconds=0)
     default_jitter = datetime.timedelta(seconds=0)

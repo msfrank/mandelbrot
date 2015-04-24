@@ -6,7 +6,7 @@ import logging
 log = logging.getLogger("mandelbrot.agent.processor")
 
 from mandelbrot.agent.endpoint import make_endpoint
-from mandelbrot.agent.evaluator import make_scheduled_check, Evaluator, CheckResult, CheckFailed
+from mandelbrot.agent.evaluator import make_scheduled_check, make_evaluator, CheckResult, CheckFailed
 from mandelbrot.agent.registration import make_registration
 from mandelbrot.transport import TransportException
 
@@ -62,28 +62,28 @@ class Processor(object):
         registration = make_registration(agent_id, metadata, scheduled_checks)
 
         # construct the endpoint
+        log.debug("constructing endpoint %s", endpoint_url)
         with make_endpoint(self.event_loop, endpoint_url, self.registry, 10) as endpoint:
 
             # register agent with the endpoint
-            log.debug("registering %s with endpoint %s", agent_id, endpoint_url)
-            yield from endpoint.register_agent(agent_id, registration)
+            log.debug("registering %s with endpoint", agent_id)
+            yield from endpoint.register_agent(registration, 1)
 
-            # pending contains all the futures we are waiting for
-            pending = set()
+            # construct the evaluator
+            with make_evaluator(self.event_loop, scheduled_checks, 10) as evaluator:
 
-            # create the evaluator and run it in a task
-            check_workers = 10
-            check_executor = concurrent.futures.ProcessPoolExecutor(check_workers)
-
-            try:
-                evaluator = Evaluator(self.event_loop, scheduled_checks, check_executor)
-                evaluator_task = self.event_loop.create_task(evaluator.run_until_signaled(signal))
-                pending.add(evaluator.next_evaluation())
+                # pending contains all the futures we are waiting for
+                pending = set()
 
                 # create a future to wait for the shutdown signal
                 shutdown_signal = self.event_loop.create_task(signal.wait())
                 pending.add(shutdown_signal)
 
+                # start the evaluator and wait for the first evaluation
+                evaluator_task = self.event_loop.create_task(evaluator.run_until_signaled(signal))
+                pending.add(evaluator.next_evaluation())
+
+                # loop until we receive the shutdown signal
                 while True:
                     done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
                         return_when=concurrent.futures.FIRST_COMPLETED)
@@ -113,7 +113,9 @@ class Processor(object):
                             pending.add(evaluator.next_evaluation())
                         elif isinstance(result, TransportException):
                             log.error("endpoint responds %s", result)
-                        elif isinstance(result, None):
+                        elif isinstance(result, Exception):
+                            log.error("endpoint raises %s", result)
+                        elif result is None:
                             log.debug("endpoint accepted evaluation")
 
                 # cancel all pending futures
@@ -123,8 +125,3 @@ class Processor(object):
 
                 # wait for evaluator to finish cleaning up
                 yield from asyncio.wait_for(evaluator_task, None, loop=self.event_loop)
-
-            finally:
-                log.debug("shutting down executors")
-                if check_executor is not None:
-                    check_executor.shutdown()

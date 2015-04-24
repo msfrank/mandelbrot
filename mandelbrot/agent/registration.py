@@ -51,7 +51,7 @@ def make_registration(agent_id, metadata, scheduled_checks):
         check.set_retirement_age(retirement_age)
         registration.set_check(check_id, check)
 
-        s = pprint.pformat(registration.destructure())
-        log.debug("registration for %s:\n%s", agent_id, s, indent=4, width=120, compact=False)
+    s = pprint.pformat(registration.destructure(), indent=4, width=120, compact=False)
+    log.debug("registration for %s:\n%s", agent_id, s)
 
     return registration

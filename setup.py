@@ -54,6 +54,7 @@ setup(
             'AlwaysHealthy=mandelbrot.check.dummy:AlwaysHealthy',
             ],
         'mandelbrot.transport': [
+            'dummy=mandelbrot.transport.dummy:DummyTransport',
             'http=mandelbrot.transport.http:HttpTransport',
             'https=mandelbrot.transport.http:HttpTransport',
             ],

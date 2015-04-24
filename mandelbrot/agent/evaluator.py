@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import contextlib
 import logging
 
 log = logging.getLogger("mandelbrot.agent.evaluator")
@@ -75,6 +76,25 @@ class Evaluator(object):
         :rtype: callable
         """
         return self.queue.get()
+
+@contextlib.contextmanager
+def make_evaluator(event_loop, scheduled_checks, check_workers):
+    """
+    Create the transport and construct the agent endpoint.
+
+    :param event_loop:
+    :type event_loop: asyncio.AbstractEventLoop
+    :param endpoint_url:
+    :type endpoint_url: urllib.parse.ParseResult
+    :param registry:
+    :type registry: mandelbrot.registry.Registry
+    :param num_workers:
+    :type num_workers: int
+    :return:
+    """
+    check_executor = concurrent.futures.ProcessPoolExecutor(check_workers)
+    yield Evaluator(event_loop, scheduled_checks, check_executor)
+    check_executor.shutdown()
 
 class ScheduledCheck(object):
     """

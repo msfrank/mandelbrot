@@ -91,6 +91,7 @@ class Instance(object):
             return None
 
     def set_endpoint_url(self, endpoint_url):
+        assert isinstance(endpoint_url, urllib.parse.ParseResult)
         with self.conn as conn:
             conn.execute(_SQLStatements.set_endpoint_url,
                 (urllib.parse.urlunparse(endpoint_url),))

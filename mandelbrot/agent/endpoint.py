@@ -26,7 +26,7 @@ class Endpoint(object):
         :returns:
         :rtype:
         """
-        path = 'v2/systems/' + agent_id
+        path = 'v2/systems/' + str(agent_id)
         agent = yield from self.transport.get_item(path, {})
         return agent
 
@@ -56,7 +56,7 @@ class Endpoint(object):
         :returns: The ResponseItem object wrapped in a Future.
         :rtype: asyncio.Future[ResponseItem]
         """
-        path = 'v2/systems/' + agent_id
+        path = 'v2/systems/' + str(agent_id)
         yield from self.transport.replace_item(path, registration.destructure())
         return None
 
@@ -66,7 +66,7 @@ class Endpoint(object):
         :param agent_id:
         :type agent_id: str
         """
-        yield from self.transport.delete_item('v2/systems/' + agent_id)
+        yield from self.transport.delete_item('v2/systems/' + str(agent_id))
         return None
 
     @asyncio.coroutine
@@ -79,7 +79,7 @@ class Endpoint(object):
         :param evaluation:
         :type evaluation: mandelbrot.model.evaluation.Evaluation
         """
-        path = 'v2/systems/' + agent_id + '/probes/' + check_id
+        path = 'v2/systems/' + str(agent_id) + '/probes/' + str(check_id)
         yield from self.transport.create_item(path, evaluation.destructure())
         return None
 
