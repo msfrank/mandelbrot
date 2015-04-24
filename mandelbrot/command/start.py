@@ -1,11 +1,11 @@
 import os
 import sys
-import concurrent.futures
 import logging
 import contextlib
 import daemon
 import lockfile
 import signal
+import cifparser
 
 from mandelbrot.log import daemon_format, debug_format
 from mandelbrot.agent.supervisor import Supervisor
@@ -38,13 +38,14 @@ def start_main(ns):
             filename=os.path.join(ns.path, 'agent.log'), format=daemon_format)
     log = logging.getLogger('mandelbrot')
 
-    pool_workers = ns.pool_workers
-    endpoint_executor = concurrent.futures.ThreadPoolExecutor(max_workers = pool_workers * 2)
-    check_executor = concurrent.futures.ProcessPoolExecutor(max_workers = pool_workers)
-    supervisor = Supervisor(ns.path, endpoint_executor, check_executor)
-
     pidfile = os.path.join(ns.path, 'agent.pid')
 
+    values = cifparser.ValueTree()
+    values.put_container('mandelbrot.agent')
+    values.put_field('mandelbrot.agent', 'pool workers', str(ns.pool_workers))
+    settings = cifparser.Namespace(values)
+
+    supervisor = Supervisor(ns.path, settings)
     daemon_context = daemon.DaemonContext(
         working_directory = ns.path,
         pidfile = with_timeout(-1, lockfile.LockFile(pidfile)),

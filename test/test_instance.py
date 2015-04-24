@@ -2,6 +2,7 @@ import bootstrap
 
 import unittest
 import pathlib
+import urllib.parse
 import tempfile
 import shutil
 import cifparser
@@ -71,6 +72,6 @@ class TestInstance(unittest.TestCase):
         "Setting the endpoint url for an instance should succeed"
         path = pathlib.Path(self.tmp_path, 'agent')
         instance = mandelbrot.instance.create_instance(path)
-        instance.set_endpoint_url('foo')
-        self.assertEqual(instance.get_endpoint_url(), 'foo')
+        instance.set_endpoint_url(urllib.parse.urlparse('http://foo.com'))
+        self.assertEqual(urllib.parse.urlunparse(instance.get_endpoint_url()), 'http://foo.com')
         instance.close()

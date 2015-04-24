@@ -2,16 +2,17 @@ import bootstrap
 
 import unittest
 import asyncio
+import urllib.parse
 import concurrent.futures
 import requests
 import requests_mock
 
-import mandelbrot.agent.endpoint
-import mandelbrot.endpoint
+from mandelbrot.transport.http import HttpTransport
+from mandelbrot.agent.endpoint import Endpoint
 
 class TestEndpoint(unittest.TestCase):
 
-    url = "mock://localhost"
+    url = urllib.parse.urlparse("mock://localhost")
 
     def test_register_agent(self):
         "An Endpoint should register an Agent"
@@ -23,9 +24,8 @@ class TestEndpoint(unittest.TestCase):
         session = requests.Session()
         session.mount('mock', mock)
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        endpoint = mandelbrot.agent.endpoint.Endpoint(event_loop, self.url, session, executor)
+        transport = HttpTransport(self.url, event_loop, executor, session=session)
+        endpoint = Endpoint(transport)
         future = asyncio.wait_for(endpoint.get_agent('localhost.localdomain'), 5.0, loop=event_loop)
         response = event_loop.run_until_complete(future)
-        self.assertIsInstance(response, requests.Response)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {'foo': 'bar'})
+        self.assertDictEqual(response, {'foo': 'bar'})

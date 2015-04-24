@@ -1,5 +1,6 @@
 import os
 import pathlib
+import urllib.parse
 import logging
 import lockfile
 import sqlite3
@@ -86,12 +87,13 @@ class Instance(object):
             cursor.execute(_SQLStatements.get_endpoint_url)
             results = cursor.fetchone()
             if results is not None:
-                return str(results[0])
+                return urllib.parse.urlparse(results[0])
             return None
 
     def set_endpoint_url(self, endpoint_url):
         with self.conn as conn:
-            conn.execute(_SQLStatements.set_endpoint_url, (endpoint_url,))
+            conn.execute(_SQLStatements.set_endpoint_url,
+                (urllib.parse.urlunparse(endpoint_url),))
 
     def list_metadata(self):
         with self.conn as conn:

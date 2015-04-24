@@ -11,7 +11,9 @@ log = logging.getLogger("mandelbrot.agent.processor")
 
 from mandelbrot.model.registration import Registration
 from mandelbrot.model.check import Check
-from mandelbrot.endpoint import Failure
+from mandelbrot.transport import TransportException, RetryLater
+from mandelbrot.transport.http import HttpTransport
+from mandelbrot.agent.endpoint import Endpoint
 from mandelbrot.agent.evaluator import make_scheduled_check, Evaluator, CheckResult, CheckFailed
 
 default_join_timeout = datetime.timedelta(minutes=5)
@@ -22,7 +24,7 @@ default_retirement_age = datetime.timedelta(days=1)
 class Processor(object):
     """
     """
-    def __init__(self, event_loop, instance, registry, endpoint, executor):
+    def __init__(self, event_loop, instance, registry, settings):
         """
         :param event_loop:
         :type event_loop: asyncio.AbstractEventLoop
@@ -30,16 +32,13 @@ class Processor(object):
         :type instance: mandelbrot.instance.Instance
         :param registry:
         :type registry: mandelbrot.registry.Registry
-        :param endpoint:
-        :type endpoint: mandelbrot.agent.endpoint.Endpoint
-        :param executor:
-        :type executor: concurrent.futures.Executor
+        :param settings:
+        :type settings: cifparser.Namespace
         """
         self.event_loop = event_loop
         self.instance = instance
         self.registry = registry
-        self.endpoint = endpoint
-        self.executor = executor
+        self.settings = settings
 
     @asyncio.coroutine
     def run_until_signaled(self, signal):
@@ -51,6 +50,7 @@ class Processor(object):
         # load configuration from the instance
         with self.instance.lock():
             agent_id = self.instance.get_agent_id()
+            endpoint_url = self.instance.get_endpoint_url()
             checks = sorted(self.instance.list_checks(), key=lambda check: check.check_id)
             metadata = list(self.instance.list_metadata())
         log.debug("loading instance %s", agent_id)
@@ -93,59 +93,88 @@ class Processor(object):
         log.debug("registration for %s:\n%s", agent_id, pprint.pformat(registration.destructure(),
             indent=4, width=120, compact=False))
 
-        # register agent with the endpoint
-        log.debug("registering %s with endpoint", agent_id)
-        response = yield from self.endpoint.register_agent(agent_id, registration)
-        if isinstance(response, Failure):
-            response,exception = response.response, response.exception
-            if response is not None:
-                log.debug("endpoint responded %i %s", response.status_code, response.reason)
-            raise Exception("failed to register: " + str(exception))
+        transport_executor = None
+        check_executor = None
 
-        # pending contains all the futures we are waiting for
-        pending = set()
+        try:
 
-        # create the evaluator and run it in a task
-        evaluator = Evaluator(self.event_loop, scheduled_checks, self.executor)
-        evaluator_task = self.event_loop.create_task(evaluator.run_until_signaled(signal))
-        pending.add(evaluator.next_evaluation())
+            # create the transport and construct the agent endpoint
+            transport_workers = 10
+            transport_executor = concurrent.futures.ThreadPoolExecutor(transport_workers)
+            transport = HttpTransport(endpoint_url, self.event_loop, transport_executor)
+            endpoint = Endpoint(transport)
 
-        # create a future to wait for the shutdown signal
-        shutdown_signal = self.event_loop.create_task(signal.wait())
-        pending.add(shutdown_signal)
+            # register agent with the endpoint
+            log.debug("registering %s with endpoint", agent_id)
+            retries_left = 3
+            while True:
+                if not retries_left:
+                    raise Exception("failed to register")
+                try:
+                    yield from endpoint.register_agent(agent_id, registration)
+                except RetryLater:
+                    retries_left -= 1
+                except Exception as e:
+                    log.debug("endpoint responded %s", e)
+                    raise
 
-        while True:
-            done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
-                return_when=concurrent.futures.FIRST_COMPLETED)
-            log.debug("done=%s, pending=%s", done, pending)
+            # pending contains all the futures we are waiting for
+            pending = set()
 
-            # if we were signaled, then break the loop
-            if shutdown_signal.done():
-                break
+            # create the evaluator and run it in a task
+            check_workers = 10
+            check_executor = concurrent.futures.ProcessPoolExecutor(check_workers)
+            evaluator = Evaluator(self.event_loop, scheduled_checks, check_executor)
+            evaluator_task = self.event_loop.create_task(evaluator.run_until_signaled(signal))
+            pending.add(evaluator.next_evaluation())
 
-            # otherwise process the result of all completed futures
-            done = [r.result() for r in done]
-            for result in done:
-                if isinstance(result, CheckResult):
-                    check_id = result.scheduled_check.id
-                    evaluation = result.result
-                    log.debug("check %s submits evaluation %s to %s", check_id, evaluation, agent_id)
-                    f = self.endpoint.submit_evaluation(agent_id, check_id, evaluation)
-                    pending.add(f)
-                    pending.add(evaluator.next_evaluation())
-                elif isinstance(result, CheckFailed):
-                    check_id = result.scheduled_check.id
-                    log.debug("check %s failed: %s", check_id, str(result.failure))
-                    pending.add(evaluator.next_evaluation())
-                elif isinstance(result, requests.Response):
-                    log.debug("endpoint responds %s", result.status_code)
-                elif isinstance(result, Failure):
-                    log.debug("endpoint raises %s", result.exception)
+            # create a future to wait for the shutdown signal
+            shutdown_signal = self.event_loop.create_task(signal.wait())
+            pending.add(shutdown_signal)
 
-        # cancel all pending futures
-        for f in pending:
-            log.debug("cancelling pending future %s", f)
-            f.cancel()
+            while True:
+                done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
+                    return_when=concurrent.futures.FIRST_COMPLETED)
+                log.debug("done=%s, pending=%s", done, pending)
 
-        # wait for evaluator to finish cleaning up
-        yield from asyncio.wait_for(evaluator_task, None, loop=self.event_loop)
+                # if we were signaled, then break the loop
+                if shutdown_signal.done():
+                    break
+
+                # otherwise process the result of all completed futures
+                results = []
+                for f in done:
+                    try:
+                        results.append(f.result())
+                    except Exception as e:
+                        results.append(e)
+                for result in results:
+                    if isinstance(result, CheckResult):
+                        check_id = result.scheduled_check.check_id
+                        evaluation = result.result
+                        log.debug("check %s submits evaluation %s", check_id, evaluation)
+                        pending.add(endpoint.submit_evaluation(agent_id, check_id, evaluation))
+                        pending.add(evaluator.next_evaluation())
+                    elif isinstance(result, CheckFailed):
+                        check_id = result.scheduled_check.id
+                        log.error("check %s failed: %s", check_id, str(result.failure))
+                        pending.add(evaluator.next_evaluation())
+                    elif isinstance(result, TransportException):
+                        log.error("endpoint responds %s", result)
+                    elif isinstance(result, None):
+                        log.debug("endpoint accepted evaluation")
+
+            # cancel all pending futures
+            for f in pending:
+                log.debug("cancelling pending future %s", f)
+                f.cancel()
+
+            # wait for evaluator to finish cleaning up
+            yield from asyncio.wait_for(evaluator_task, None, loop=self.event_loop)
+
+        finally:
+            log.debug("shutting down executors")
+            if transport_executor is not None:
+                transport_executor.shutdown()
+            if check_executor is not None:
+                check_executor.shutdown()

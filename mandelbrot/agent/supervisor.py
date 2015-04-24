@@ -1,8 +1,9 @@
 import asyncio
 import signal
 import logging
-import requests
 import pathlib
+import requests
+import cifparser
 
 log = logging.getLogger("mandelbrot.agent.supervisor")
 
@@ -14,18 +15,15 @@ from mandelbrot.agent.processor import Processor
 class Supervisor(object):
     """
     """
-    def __init__(self, path, endpoint_executor, check_executor):
+    def __init__(self, path, settings):
         """
         :param path:
         :type path: str
-        :param endpoint_executor:
-        :type endpoint_executor: concurrent.futures.Executor
-        :param check_executor:
-        :type check_executor: concurrent.futures.Executor
+        :param settings:
+        :type settings: cifparser.Namespace
         """
         self.path = pathlib.Path(path)
-        self.endpoint_executor = endpoint_executor
-        self.check_executor = check_executor
+        self.settings = settings
         self.is_finished = False
         self.ignore_signals = False
 
@@ -49,12 +47,8 @@ class Supervisor(object):
             while not self.is_finished:
                 # open the instance at the specified path
                 instance = open_instance(self.path)
-                with instance.lock():
-                    endpoint_url = instance.get_endpoint_url()
-                # create the http endpoint
-                session = requests.Session()
-                endpoint = Endpoint(event_loop, endpoint_url, session, self.endpoint_executor)
-                processor = Processor(event_loop, instance, registry, endpoint, self.check_executor)
+                # create the processor
+                processor = Processor(event_loop, instance, registry, self.settings)
                 # enable signal catching
                 self.ignore_signals = False
                 # wait until the processor completes
@@ -70,9 +64,6 @@ class Supervisor(object):
                 # reset the shutdown signal event
                 shutdown_signal.clear()
         finally:
-            log.debug("shutting down executors")
-            self.check_executor.shutdown()
-            self.endpoint_executor.shutdown()
             log.debug("shutting down event loop")
             event_loop.stop()
             event_loop.close()
