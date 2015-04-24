@@ -1,3 +1,4 @@
+entry_point_type = 'mandelbrot.transport'
 
 class Transport(object):
     """
@@ -120,6 +121,12 @@ class Transport(object):
         :raises Forbidden:
         """
         raise NotImplementedError()
+
+    def close(self):
+        """
+        Release resources associated with the transport.
+        """
+        pass
 
 class TransportException(Exception):
     """

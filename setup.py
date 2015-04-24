@@ -53,6 +53,10 @@ setup(
         'mandelbrot.check': [
             'AlwaysHealthy=mandelbrot.check.dummy:AlwaysHealthy',
             ],
+        'mandelbrot.transport': [
+            'http=mandelbrot.transport.http:HttpTransport',
+            'https=mandelbrot.transport.http:HttpTransport',
+            ],
         },
     # test dependencies
     tests_require=test_requirements,
