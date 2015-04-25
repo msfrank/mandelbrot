@@ -3,6 +3,7 @@ python:
   - "3.4"
 # install runtime and test dependencies
 install:
+  - pip install https://github.com/msfrank/cifparser/zipball/master
   - "pip install -r requirements.txt"
   - "pip install -r test_requirements.txt"
   - "python ./setup.py install"
