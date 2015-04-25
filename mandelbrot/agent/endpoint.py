@@ -22,7 +22,7 @@ class Endpoint(object):
     def get_agent(self, agent_id):
         """
         :param agent_id:
-        :type agent_id: str
+        :type agent_id: cifparser.Path
         :returns:
         :rtype:
         """
@@ -52,7 +52,7 @@ class Endpoint(object):
     def update_agent(self, agent_id, registration):
         """
         :param agent_id:
-        :type agent_id: str
+        :type agent_id: cifparser.Path
         :returns: The ResponseItem object wrapped in a Future.
         :rtype: asyncio.Future[ResponseItem]
         """
@@ -64,7 +64,7 @@ class Endpoint(object):
     def unregister_agent(self, agent_id):
         """
         :param agent_id:
-        :type agent_id: str
+        :type agent_id: cifparser.Path
         """
         yield from self.transport.delete_item('v2/systems/' + str(agent_id))
         return None
@@ -73,9 +73,9 @@ class Endpoint(object):
     def submit_evaluation(self, agent_id, check_id, evaluation):
         """
         :param agent_id:
-        :type agent_id: str
+        :type agent_id: cifparser.Path
         :param check_id:
-        :type check_id: str
+        :type check_id: cifparser.Path
         :param evaluation:
         :type evaluation: mandelbrot.model.evaluation.Evaluation
         """
