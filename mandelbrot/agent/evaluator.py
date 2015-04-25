@@ -12,31 +12,36 @@ from mandelbrot.agent.scheduler import Scheduler
 class Evaluator(object):
     """
     """
-    def __init__(self, event_loop, checks, executor):
+    def __init__(self, event_loop, scheduled_checks, executor):
         """
         :param event_loop:
         :type event_loop: asyncio.AbstractEventLoop
-        :param checks:
-        :type checks: list[ScheduledCheck]
+        :param scheduled_checks:
+        :type scheduled_checks: list[ScheduledCheck]
         :param executor:
         :type executor: concurrent.futures.Executor
         """
         self.event_loop = event_loop
+        self.scheduled_checks = scheduled_checks
         self.executor = executor
         self.queue = asyncio.Queue(loop=event_loop)
-        self.scheduler = Scheduler(event_loop)
-        for check in checks:
-            self.scheduler.schedule_task(check, check.delay, check.offset, check.jitter)
 
     @asyncio.coroutine
     def run_until_signaled(self, signal):
         """
         """
-        shutdown_signal = self.event_loop.create_task(signal.wait())
         pending = set()
+        shutdown_signal = self.event_loop.create_task(signal.wait())
         pending.add(shutdown_signal)
-        pending.add(self.scheduler.next_task())
 
+        # schedule each check and run its init method
+        scheduler = Scheduler(self.event_loop)
+        for check in self.scheduled_checks:
+            check.check.init()
+            scheduler.schedule_task(check, check.delay, check.offset, check.jitter)
+        pending.add(scheduler.next_task())
+
+        # loop executing each check according to its schedule
         while True:
             log.debug("waiting for %s", pending)
             done,pending = yield from asyncio.wait(pending, loop=self.event_loop,
@@ -55,7 +60,7 @@ class Evaluator(object):
                     log.debug("submitting %s to executor", result)
                     execute_check = self.event_loop.run_in_executor(self.executor, result)
                     pending.add(execute_check)
-                    pending.add(self.scheduler.next_task())
+                    pending.add(scheduler.next_task())
                 else:
                     try:
                         self.queue.put_nowait(result)
@@ -63,12 +68,16 @@ class Evaluator(object):
                         log.error("dropping check evaluation, queue is full")
 
         # unscheduled all scheduled checks
-        self.scheduler.unschedule_all()
+        scheduler.unschedule_all()
 
         # cancel all pending futures
         for f in pending:
             log.debug("cancelling pending future %s", f)
             f.cancel()
+
+        # run each check cleanup method
+        for check in self.scheduled_checks:
+            check.check.fini()
 
     def next_evaluation(self):
         """

@@ -40,6 +40,8 @@ class Registry(object):
         :param requirement:
         :type requirement: str
         """
+        log.debug("looking up '%s' of type %s with requirement %s", factory_name, 
+            entry_point_type, requirement)
         # check factory overrides first
         if (entry_point_type,factory_name) in self.overrides:
             factory = self.overrides[(entry_point_type,factory_name)]
