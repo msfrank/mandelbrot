@@ -11,12 +11,20 @@ class Check(object):
         self.s = s
     def __call__(self):
         return self.s
+    def init(self):
+        pass
+    def fini(self):
+        pass
 
 class Failure(object):
     def __init__(self, s):
         self.s = s
     def __call__(self):
         raise Exception(self.s)
+    def init(self):
+        pass
+    def fini(self):
+        pass
 
 class TestEvaluator(unittest.TestCase):
 
