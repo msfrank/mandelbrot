@@ -17,12 +17,12 @@ class SystemLoad(Check):
         return {}
 
     def init(self):
-        self.failed_1min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "failed 1min threshold")
-        self.degraded_1min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "degraded 1min threshold")
-        self.failed_5min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "failed 5min threshold")
-        self.degraded_5min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "degraded 5min threshold")
-        self.failed_15min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "failed 15min threshold")
-        self.degraded_15min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "degraded 15min threshold")
+        self.failed_1min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "1min failed threshold")
+        self.degraded_1min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "1min degraded threshold")
+        self.failed_5min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "5min failed threshold")
+        self.degraded_5min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "5min degraded threshold")
+        self.failed_15min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "15min failed threshold")
+        self.degraded_15min = self.ns.get_float_or_default(cifparser.ROOT_PATH, "15min degraded threshold")
         self.per_cpu = self.ns.get_bool_or_default(cifparser.ROOT_PATH, "divide per cpu", False)
         self.cache_cpu_count = self.ns.get_bool_or_default(cifparser.ROOT_PATH, "cache cpu count", False)
         if self.cache_cpu_count:
