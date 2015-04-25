@@ -50,20 +50,20 @@ class SystemCPU(Check):
         else:
             showvals = ", ".join(["%.1f%% %s" % (v,n) for n,v in items])
         evaluation.set_summary("CPU utilization is " + showvals)
-        if self.userdegraded is not None and times.user > self.userdegraded:
+        if self.userdegraded is not None and times.user / 100.0 > self.userdegraded:
             evaluation.set_health(DEGRADED)
-        if self.systemdegraded is not None and times.system > self.systemdegraded:
+        if self.systemdegraded is not None and times.system / 100.0 > self.systemdegraded:
             evaluation.set_health(DEGRADED)
-        if self.iowaitdegraded is not None and times.iowait > self.iowaitdegraded:
+        if self.iowaitdegraded is not None and times.iowait / 100.0 > self.iowaitdegraded:
             evaluation.set_health(DEGRADED)
-        if self.idledegraded is not None and times.idle < self.idledegraded:
+        if self.idledegraded is not None and times.idle / 100.0 > self.idledegraded:
             evaluation.set_health(DEGRADED)
-        if self.userfailed is not None and times.user > self.userfailed:
+        if self.userfailed is not None and times.user / 100.0 > self.userfailed:
             evaluation.set_health(FAILED)
-        if self.systemfailed is not None and times.system > self.systemfailed:
+        if self.systemfailed is not None and times.system / 100.0 > self.systemfailed:
             evaluation.set_health(FAILED)
-        if self.iowaitfailed is not None and times.iowait > self.iowaitfailed:
+        if self.iowaitfailed is not None and times.iowait / 100.0 > self.iowaitfailed:
             evaluation.set_health(FAILED)
-        if self.idlefailed is not None and times.idle < self.idlefailed:
+        if self.idlefailed is not None and times.idle / 100.0 > self.idlefailed:
             evaluation.set_health(FAILED)
         return evaluation

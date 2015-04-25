@@ -9,7 +9,6 @@ log = logging.getLogger("mandelbrot.agent.supervisor")
 
 from mandelbrot.instance import open_instance
 from mandelbrot.registry import Registry
-from mandelbrot.agent.endpoint import Endpoint
 from mandelbrot.agent.processor import Processor
 
 class Supervisor(object):
