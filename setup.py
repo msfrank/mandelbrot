@@ -45,6 +45,10 @@ setup(
     packages=[
         'mandelbrot',
         'mandelbrot.agent',
+        'mandelbrot.check',
+        'mandelbrot.command',
+        'mandelbrot.model',
+        'mandelbrot.transport',
         ],
     entry_points={
         'console_scripts': [
@@ -52,6 +56,12 @@ setup(
             ],
         'mandelbrot.check': [
             'AlwaysHealthy=mandelbrot.check.dummy:AlwaysHealthy',
+            'SystemLoad=mandelbrot.check.systemload:SystemLoad',
+            'SystemCPU=mandelbrot.check.systemcpu:SystemCPU',
+            'SystemMemory=mandelbrot.check.systemmemory:SystemMemory',
+            'DiskPerformance=mandelbrot.check.diskperformance:DiskPerformance',
+            'DiskUtilization=mandelbrot.check.diskutilization:DiskUtilization',
+            'NetPerformance=mandelbrot.check.netperformance:NetPerformance',
             ],
         'mandelbrot.transport': [
             'dummy=mandelbrot.transport.dummy:DummyTransport',
