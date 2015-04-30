@@ -30,11 +30,12 @@ class Check(object):
 
     def init(self):
         """
-        Perform any initialization necessary before calling execute for the first time.
+        Perform any initialization necessary before calling execute for
+        the first time, and return the initial check context.
         """
         pass
 
-    def fini(self):
+    def fini(self, context):
         """
         Perform cleanup tasks before shutdown.
         """
@@ -55,13 +56,10 @@ class Check(object):
         """
         raise NotImplementedError()
 
-    def execute(self):
+    def execute(self, evaluation, context):
         """
         Execute the check, and return an Evaluation.
 
         :rtype: mandelbrot.model.Evaluation
         """
         raise NotImplementedError()
-
-    def __call__(self, *args, **kwargs):
-        return self.execute()

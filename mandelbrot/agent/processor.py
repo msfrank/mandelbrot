@@ -6,8 +6,8 @@ import logging
 log = logging.getLogger("mandelbrot.agent.processor")
 
 from mandelbrot.agent.endpoint import make_endpoint
-from mandelbrot.agent.evaluator import make_scheduled_check, make_evaluator, CheckResult, CheckFailed
 from mandelbrot.agent.registration import make_registration
+from mandelbrot.agent.evaluator import make_scheduled_check, make_evaluator, CheckEvaluation
 from mandelbrot.transport import TransportException
 
 default_join_timeout = datetime.timedelta(minutes=5)
@@ -79,7 +79,6 @@ class Processor(object):
                     evaluator, agent_id, endpoint, signal)
                 yield from asyncio.wait_for(processor_task, None, loop=self.event_loop)
 
-
 @asyncio.coroutine
 def process_evaluations(event_loop, evaluator, agent_id, endpoint, signal):
     """
@@ -125,15 +124,11 @@ def process_evaluations(event_loop, evaluator, agent_id, endpoint, signal):
             except Exception as e:
                 results.append(e)
         for result in results:
-            if isinstance(result, CheckResult):
-                check_id = result.scheduled_check.check_id
-                evaluation = result.result
+            if isinstance(result, CheckEvaluation):
+                check_id = result.check_id
+                evaluation = result.evaluation
                 log.debug("check %s submits evaluation %s", check_id, evaluation)
                 pending.add(endpoint.submit_evaluation(agent_id, check_id, evaluation))
-                pending.add(evaluator.next_evaluation())
-            elif isinstance(result, CheckFailed):
-                check_id = result.scheduled_check.check_id
-                log.error("check %s failed: %s", check_id, str(result.failure))
                 pending.add(evaluator.next_evaluation())
             elif isinstance(result, TransportException):
                 log.error("endpoint responds %s", result)

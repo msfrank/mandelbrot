@@ -7,6 +7,7 @@ log = logging.getLogger("mandelbrot.agent.evaluator")
 
 import mandelbrot.check
 import mandelbrot.registry
+from mandelbrot.model.evaluation import Evaluation
 from mandelbrot.agent.scheduler import Scheduler
 
 class Evaluator(object):
@@ -34,11 +35,17 @@ class Evaluator(object):
         shutdown_signal = self.event_loop.create_task(signal.wait())
         pending.add(shutdown_signal)
 
+        # holds the context between invocations for each check
+        check_contexts = {}
+        # scheduled checks that are currently running on an executor
+        checks_running = set()
+
         # schedule each check and run its init method
         scheduler = Scheduler(self.event_loop)
         for check in self.scheduled_checks:
-            check.check.init()
+            context = check.check.init()
             scheduler.schedule_task(check, check.delay, check.offset, check.jitter)
+            check_contexts[check.check_id] = context
         pending.add(scheduler.next_task())
 
         # loop executing each check according to its schedule
@@ -55,17 +62,39 @@ class Evaluator(object):
             # otherwise process the result of all completed futures
             done = [r.result() for r in done]
             for result in done:
-
-                if isinstance(result, ScheduledCheck):
-                    log.debug("submitting %s to executor", result)
-                    execute_check = self.event_loop.run_in_executor(self.executor, result)
+                # scheduled check is blocked
+                if isinstance(result, ScheduledCheck) and result.check_id in checks_running:
+                    log.warning("skipping check %s: previous invocation is still running",
+                        result.check_id)
+                    pending.add(scheduler.next_task())
+                # scheduled check is ready to be run
+                elif isinstance(result, ScheduledCheck):
+                    check_id = result.check_id
+                    check = result.check
+                    context = check_contexts[check_id]
+                    check_eval_ctx = CheckEvaluationContext(check_id, check, context)
+                    log.debug("submitting check %s to executor with context %s", check_id, context)
+                    execute_check = self.event_loop.run_in_executor(self.executor, check_eval_ctx.execute)
+                    checks_running.add(check_id)
                     pending.add(execute_check)
                     pending.add(scheduler.next_task())
-                else:
+                # scheduled check has completed, queue it for processing
+                elif isinstance(result, CheckEvaluationContext):
                     try:
-                        self.queue.put_nowait(result)
+                        check_id = result.check_id
+                        evaluation = result.evaluation
+                        context = result.context
+                        checks_running.remove(check_id)
+                        self.queue.put_nowait(CheckEvaluation(check_id, evaluation))
+                        check_contexts[check_id] = context
+                        log.debug("enqueuing evaluation for check %s", result.check_id)
                     except asyncio.QueueFull:
-                        log.error("dropping check evaluation, queue is full")
+                        log.error("dropped evaluation for check %s, queue is full", result.check_id)
+                # a scheduled check returns an error
+                elif isinstance(result, EvaluationException):
+                    log.error("check %s failed: %s", result.check_id, str(result.cause))
+                elif isinstance(result, Exception):
+                    log.error("check %s raises %s", result.check_id, str(result))
 
         # unscheduled all scheduled checks
         scheduler.unschedule_all()
@@ -77,7 +106,9 @@ class Evaluator(object):
 
         # run each check cleanup method
         for check in self.scheduled_checks:
-            check.check.fini()
+            context = check_contexts[check.check_id]
+            del check_contexts[check.check_id]
+            check.check.fini(context)
 
     def next_evaluation(self):
         """
@@ -105,6 +136,36 @@ def make_evaluator(event_loop, scheduled_checks, check_workers):
     yield Evaluator(event_loop, scheduled_checks, check_executor)
     check_executor.shutdown()
 
+class CheckEvaluationContext(object):
+    """
+    """
+    def __init__(self, check_id, check, context):
+        self._check = check
+        self.check_id = check_id
+        self.context = context
+        self.evaluation = Evaluation()
+
+    def execute(self):
+        try:
+            self._check.execute(self.evaluation, self.context)
+            return self
+        except Exception as e:
+            return EvaluationException(self.check_id, e)
+
+class EvaluationException(Exception):
+    """
+    """
+    def __init__(self, check_id, cause):
+        self.check_id = check_id
+        self.cause = cause
+
+class CheckEvaluation(object):
+    """
+    """
+    def __init__(self, check_id, evaluation):
+        self.check_id = check_id
+        self.evaluation = evaluation
+
 class ScheduledCheck(object):
     """
     """
@@ -126,38 +187,6 @@ class ScheduledCheck(object):
         self.delay = delay
         self.offset = offset
         self.jitter = jitter
-
-    def __call__(self, *args, **kwargs):
-        try:
-            return CheckResult(self, self.check())
-        except Exception as e:
-            return CheckFailed(self, e)
-
-class CheckResult(object):
-    """
-    """
-    def __init__(self, scheduled_check, result):
-        """
-        :param scheduled_check:
-        :type scheduled_check: ScheduledCheck
-        :param result:
-        :type result: object
-        """
-        self.scheduled_check = scheduled_check
-        self.result = result
-
-class CheckFailed(object):
-    """
-    """
-    def __init__(self, scheduled_check, failure):
-        """
-        :param scheduled_check:
-        :type scheduled_check: ScheduledCheck
-        :param failure:
-        :type failure: Exception
-        """
-        self.scheduled_check = scheduled_check
-        self.failure = failure
 
 def make_scheduled_check(instance_check, registry):
     """
