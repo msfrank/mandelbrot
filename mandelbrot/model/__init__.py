@@ -1,9 +1,14 @@
+import pprint
 
 class StructuredMixin(object):
     """
     """
     def destructure(self):
         raise NotImplementedError()
+    def __str__(self):
+        return pprint.pformat(self.destructure(), indent=4)
+    def __repr__(self):
+        return str(self)
 
 class SealedException(Exception):
     """

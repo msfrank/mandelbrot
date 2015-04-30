@@ -7,7 +7,6 @@ class Check(object):
     """
     def __init__(self, ns, **kwargs):
         """
-
         :param ns:
         :type ns: cifparser.Namespace
         :return:
