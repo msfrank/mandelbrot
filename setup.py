@@ -62,6 +62,7 @@ setup(
             'DiskPerformance=mandelbrot.check.diskperformance:DiskPerformance',
             'DiskUtilization=mandelbrot.check.diskutilization:DiskUtilization',
             'NetPerformance=mandelbrot.check.netperformance:NetPerformance',
+            'ProcessCPU=mandelbrot.check.processcpu:ProcessCPU',
             ],
         'mandelbrot.transport': [
             'dummy=mandelbrot.transport.dummy:DummyTransport',
