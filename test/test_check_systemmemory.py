@@ -29,6 +29,7 @@ class TestSystemMemory(unittest.TestCase):
         evaluation = Evaluation()
         context = check.init()
         check.execute(evaluation, context)
+        print(evaluation)
         self.assertEqual(evaluation.get_health(), HEALTHY)
 
     @unittest.mock.patch('psutil.virtual_memory')
@@ -47,6 +48,7 @@ class TestSystemMemory(unittest.TestCase):
         evaluation = Evaluation()
         context = check.init()
         check.execute(evaluation, context)
+        print(evaluation)
         self.assertEqual(evaluation.get_health(), DEGRADED)
 
     @unittest.mock.patch('psutil.virtual_memory')
@@ -65,4 +67,5 @@ class TestSystemMemory(unittest.TestCase):
         evaluation = Evaluation()
         context = check.init()
         check.execute(evaluation, context)
+        print(evaluation)
         self.assertEqual(evaluation.get_health(), FAILED)

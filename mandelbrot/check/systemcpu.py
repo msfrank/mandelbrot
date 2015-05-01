@@ -36,7 +36,6 @@ class SystemCPU(Check):
         self.idlefailed = self.ns.get_percentage_or_default(cifparser.ROOT_PATH, "idle failed threshold")
         self.idledegraded = self.ns.get_percentage_or_default(cifparser.ROOT_PATH, "idle degraded threshold")
         self.extended = self.ns.get_bool_or_default(cifparser.ROOT_PATH, "extended summary", False)
-        # has side effect of throwing away the first value
         context = psutil.cpu_times()._asdict()
         context['timestamp'] = time.time()
         return context
@@ -49,6 +48,7 @@ class SystemCPU(Check):
         for key,value in times.items():
             pct[key] = ((value - context[key]) / duration) * 100.0
         items = sorted(pct.items())
+        context.update(times, timestamp=timestamp)
         if not self.extended:
             showvals = ", ".join(["%.1f%% %s" % (v,n) for n,v in items if v != 0.0])
         else:
