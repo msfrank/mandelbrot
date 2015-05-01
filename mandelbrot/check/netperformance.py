@@ -1,3 +1,4 @@
+import time
 import psutil
 import cifparser
 
@@ -9,11 +10,11 @@ class NetPerformance(Check):
     Check system network performance.
 
     Parameters:
-    net device            = DEVICE: str
-    tx failed threshold   = USAGE: int
-    tx degraded threshold = USAGE: int
-    rx failed threshold   = USAGE: int
-    rx degraded threshold = USAGE: int
+    net device                       = DEVICE: str
+    tx throughput failed threshold   = USAGE: int
+    tx throughput degraded threshold = USAGE: int
+    rx throughput failed threshold   = USAGE: int
+    rx throughput degraded threshold = USAGE: int
     """
     def get_behavior_type(self):
         return "io.mandelbrot.core.system.ScalarProbe"
@@ -21,36 +22,54 @@ class NetPerformance(Check):
     def get_behavior(self):
         return {}
 
+    def _net_io_counters(self):
+        if self.device is not None:
+            return psutil.net_io_counters(pernic=True)[self.device]
+        return psutil.net_io_counters(pernic=False)
+
     def init(self):
         self.device = self.ns.get_str_or_default(cifparser.ROOT_PATH, "net device")
-        self.senddegraded = self.ns.get_int_or_default(cifparser.ROOT_PATH, "tx degraded threshold")
-        self.sendfailed = self.ns.get_int_or_default(cifparser.ROOT_PATH, "tx failed threshold")
-        self.recvdegraded = self.ns.get_int_or_default(cifparser.ROOT_PATH, "rx degraded threshold")
-        self.recvfailed = self.ns.get_int_or_default(cifparser.ROOT_PATH, "rx failed threshold")
-        return None
+        self.tx_thru_degraded = self.ns.get_throughput_or_default(cifparser.ROOT_PATH,
+            "tx throughput degraded threshold")
+        self.tx_thru_failed = self.ns.get_throughput_or_default(cifparser.ROOT_PATH,
+            "tx throughput failed threshold")
+        self.rx_thru_degraded = self.ns.get_throughput_or_default(cifparser.ROOT_PATH,
+            "rx throughput degraded threshold")
+        self.rx_thru_failed = self.ns.get_throughput_or_default(cifparser.ROOT_PATH,
+            "rx throughput failed threshold")
+        context = self._net_io_counters()._asdict()
+        context['timestamp'] = time.time()
+        return context
 
     def execute(self, evaluation, context):
+        counters = self._net_io_counters()._asdict()
+        timestamp = time.time()
+        duration = timestamp - context['timestamp']
+        bytes_sent_s = (counters['bytes_sent'] - context['bytes_sent']) / duration
+        bytes_recv_s = (counters['bytes_recv'] - context['bytes_recv']) / duration
+        packets_sent_s = (counters['packets_sent'] - context['packets_sent']) / duration
+        packets_recv_s = (counters['packets_recv'] - context['packets_recv']) / duration
+        errin_s = (counters['errin'] - context['errin']) / duration
+        errout_s = (counters['errout'] - context['errout']) / duration
+        dropin_s = (counters['dropin'] - context['dropin']) / duration
+        dropout_s = (counters['dropout'] - context['dropout']) / duration
+        context.update(counters, timestamp=timestamp)
         if self.device is not None:
-            net = psutil.net_io_counters(pernic=True)[self.device]
+            evaluation.set_summary(
+                "%.1f M/s Tx (%.1f packets/s), %.1f M/s Rx (%.1f packets/s) on %s" % (
+                bytes_sent_s / 1048576, packets_sent_s, bytes_recv_s / 1048576, packets_recv_s,
+                self.device))
         else:
-            net = psutil.net_io_counters(pernic=False)
-        tx = net.packets_sent
-        rx = net.packets_recv
-        errin = net.errin
-        errout = net.errout
-        dropin = net.dropin
-        dropout = net.dropout
-        if self.device is not None:
-            evaluation.set_summary("%i packets sent, %i packets received on %s" % (tx,rx,self.device))
-        else:
-            evaluation.set_summary("%i packets sent, %i packets received across all devices" % (tx,rx))
-        if self.sendfailed is not None and tx > self.sendfailed:
+            evaluation.set_summary(
+                "%.1f M/s Tx (%.1f packets/s), %.1f M/s Rx (%.1f packets/s) across all devices" % (
+                    bytes_sent_s / 1048576, packets_sent_s, bytes_recv_s / 1048576, packets_recv_s))
+        if self.tx_thru_failed is not None and bytes_sent_s > self.tx_thru_failed:
             evaluation.set_health(FAILED)
-        elif self.recvfailed is not None and rx > self.recvfailed:
+        elif self.rx_thru_failed is not None and bytes_recv_s > self.rx_thru_failed:
             evaluation.set_health(FAILED)
-        elif self.senddegraded is not None and tx > self.senddegraded:
+        elif self.tx_thru_degraded is not None and bytes_sent_s > self.tx_thru_degraded:
             evaluation.set_health(DEGRADED)
-        elif self.recvdegraded is not None and rx > self.recvdegraded:
+        elif self.rx_thru_degraded is not None and bytes_recv_s > self.rx_thru_degraded:
             evaluation.set_health(DEGRADED)
         else:
             evaluation.set_health(HEALTHY)
