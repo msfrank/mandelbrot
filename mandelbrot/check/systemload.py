@@ -29,10 +29,9 @@ class SystemLoad(Check):
             self.cpu_count = psutil.cpu_count()
         else:
             self.cpu_count = None
+        return None
 
-    def execute(self):
-        evaluation = Evaluation()
-        evaluation.set_health(HEALTHY)
+    def execute(self, evaluation, context):
         load1, load5, load15 = os.getloadavg()
         ncores = self.cpu_count if self.cache_cpu_count else psutil.cpu_count()
         evaluation.set_summary("load average is %.1f %.1f %.1f, detected %i cores" % (
@@ -41,16 +40,17 @@ class SystemLoad(Check):
             load1 = load1 / float(ncores)
             load5 = load5 / float(ncores)
             load15 = load15 / float(ncores)
-        if self.degraded_1min is not None and load1 > self.degraded_1min:
-            evaluation.set_health(DEGRADED)
-        if self.degraded_5min is not None and load5 > self.degraded_5min:
-            evaluation.set_health(DEGRADED)
-        if self.degraded_15min is not None and load15 > self.degraded_15min:
-            evaluation.set_health(DEGRADED)
         if self.failed_1min is not None and load1 > self.failed_1min:
             evaluation.set_health(FAILED)
-        if self.failed_5min is not None and load5 > self.failed_5min:
+        elif self.failed_5min is not None and load5 > self.failed_5min:
             evaluation.set_health(FAILED)
-        if self.failed_15min is not None and load15 > self.failed_15min:
+        elif self.failed_15min is not None and load15 > self.failed_15min:
             evaluation.set_health(FAILED)
-        return evaluation
+        elif self.degraded_1min is not None and load1 > self.degraded_1min:
+            evaluation.set_health(DEGRADED)
+        elif self.degraded_5min is not None and load5 > self.degraded_5min:
+            evaluation.set_health(DEGRADED)
+        elif self.degraded_15min is not None and load15 > self.degraded_15min:
+            evaluation.set_health(DEGRADED)
+        else:
+            evaluation.set_health(HEALTHY)

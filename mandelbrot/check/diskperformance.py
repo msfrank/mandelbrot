@@ -29,10 +29,9 @@ class DiskPerformance(Check):
         self.readfailed = self.ns.get_int_or_default(cifparser.ROOT_PATH, "read failed threshold")
         self.writedegraded = self.ns.get_int_or_default(cifparser.ROOT_PATH, "write degraded threshold")
         self.writefailed = self.ns.get_int_or_default(cifparser.ROOT_PATH, "write failed threshold")
+        return None
 
-    def execute(self):
-        evaluation = Evaluation()
-        evaluation.set_health(HEALTHY)
+    def execute(self, evaluation, context):
         if self.device is not None:
             disk = psutil.disk_io_counters(perdisk=True)[self.device]
         else:
@@ -43,12 +42,13 @@ class DiskPerformance(Check):
             evaluation.set_summary("%i reads, %i writes on %s" % (reads,writes,self.device))
         else:
             evaluation.set_summary("%i reads, %i writes across all devices" % (reads,writes))
-        if self.readdegraded is not None and reads > self.readdegraded:
-            evaluation.set_health(DEGRADED)
-        if self.writedegraded is not None and writes > self.writedegraded:
-            evaluation.set_health(DEGRADED)
         if self.readfailed is not None and reads > self.readfailed:
             evaluation.set_health(FAILED)
-        if self.writefailed is not None and writes > self.writefailed:
+        elif self.writefailed is not None and writes > self.writefailed:
             evaluation.set_health(FAILED)
-        return evaluation
+        elif self.readdegraded is not None and reads > self.readdegraded:
+            evaluation.set_health(DEGRADED)
+        elif self.writedegraded is not None and writes > self.writedegraded:
+            evaluation.set_health(DEGRADED)
+        else:
+            evaluation.set_health(HEALTHY)

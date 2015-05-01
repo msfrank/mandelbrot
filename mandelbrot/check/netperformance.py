@@ -1,5 +1,3 @@
-import os
-import datetime
 import psutil
 import cifparser
 
@@ -29,10 +27,9 @@ class NetPerformance(Check):
         self.sendfailed = self.ns.get_int_or_default(cifparser.ROOT_PATH, "tx failed threshold")
         self.recvdegraded = self.ns.get_int_or_default(cifparser.ROOT_PATH, "rx degraded threshold")
         self.recvfailed = self.ns.get_int_or_default(cifparser.ROOT_PATH, "rx failed threshold")
+        return None
 
-    def execute(self):
-        evaluation = Evaluation()
-        evaluation.set_health(HEALTHY)
+    def execute(self, evaluation, context):
         if self.device is not None:
             net = psutil.net_io_counters(pernic=True)[self.device]
         else:
@@ -47,12 +44,13 @@ class NetPerformance(Check):
             evaluation.set_summary("%i packets sent, %i packets received on %s" % (tx,rx,self.device))
         else:
             evaluation.set_summary("%i packets sent, %i packets received across all devices" % (tx,rx))
-        if self.senddegraded is not None and tx > self.senddegraded:
-            evaluation.set_health(DEGRADED)
-        if self.recvdegraded is not None and rx > self.recvdegraded:
-            evaluation.set_health(DEGRADED)
         if self.sendfailed is not None and tx > self.sendfailed:
             evaluation.set_health(FAILED)
-        if self.recvfailed is not None and rx > self.recvfailed:
+        elif self.recvfailed is not None and rx > self.recvfailed:
             evaluation.set_health(FAILED)
-        return evaluation
+        elif self.senddegraded is not None and tx > self.senddegraded:
+            evaluation.set_health(DEGRADED)
+        elif self.recvdegraded is not None and rx > self.recvdegraded:
+            evaluation.set_health(DEGRADED)
+        else:
+            evaluation.set_health(HEALTHY)

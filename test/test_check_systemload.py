@@ -5,7 +5,7 @@ import unittest.mock
 import cifparser
 import collections
 
-from mandelbrot.model.evaluation import HEALTHY, DEGRADED, FAILED
+from mandelbrot.model.evaluation import *
 
 class TestSystemLoad(unittest.TestCase):
 
@@ -19,8 +19,9 @@ class TestSystemLoad(unittest.TestCase):
         ns = cifparser.Namespace(values)
         from mandelbrot.check.systemload import SystemLoad
         check = SystemLoad(ns)
-        check.init()
-        evaluation = check.execute()
+        evaluation = Evaluation()
+        context = check.init()
+        check.execute(evaluation, context)
         self.assertEqual(evaluation.get_health(), HEALTHY)
 
     @unittest.mock.patch('psutil.cpu_count')
@@ -35,8 +36,9 @@ class TestSystemLoad(unittest.TestCase):
         ns = cifparser.Namespace(values)
         from mandelbrot.check.systemload import SystemLoad
         check = SystemLoad(ns)
-        check.init()
-        evaluation = check.execute()
+        evaluation = Evaluation()
+        context = check.init()
+        check.execute(evaluation, context)
         self.assertEqual(evaluation.get_health(), DEGRADED)
 
     @unittest.mock.patch('psutil.cpu_count')
@@ -51,6 +53,7 @@ class TestSystemLoad(unittest.TestCase):
         ns = cifparser.Namespace(values)
         from mandelbrot.check.systemload import SystemLoad
         check = SystemLoad(ns)
-        check.init()
-        evaluation = check.execute()
+        evaluation = Evaluation()
+        context = check.init()
+        check.execute(evaluation, context)
         self.assertEqual(evaluation.get_health(), FAILED)

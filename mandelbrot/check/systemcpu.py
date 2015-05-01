@@ -1,5 +1,4 @@
-import os
-import datetime
+import time
 import psutil
 import cifparser
 
@@ -38,32 +37,38 @@ class SystemCPU(Check):
         self.idledegraded = self.ns.get_percentage_or_default(cifparser.ROOT_PATH, "idle degraded threshold")
         self.extended = self.ns.get_bool_or_default(cifparser.ROOT_PATH, "extended summary", False)
         # has side effect of throwing away the first value
-        psutil.cpu_times_percent()
+        context = psutil.cpu_times()._asdict()
+        context['timestamp'] = time.time()
+        return context
 
-    def execute(self):
-        evaluation = Evaluation()
-        evaluation.set_health(HEALTHY)
-        times = psutil.cpu_times_percent()
-        items = sorted(times._asdict().items())
+    def execute(self, evaluation, context):
+        times = psutil.cpu_times()._asdict()
+        timestamp = time.time()
+        duration = timestamp - context['timestamp']
+        pct = {}
+        for key,value in times.items():
+            pct[key] = ((value - context[key]) / duration) * 100.0
+        items = sorted(pct.items())
         if not self.extended:
             showvals = ", ".join(["%.1f%% %s" % (v,n) for n,v in items if v != 0.0])
         else:
             showvals = ", ".join(["%.1f%% %s" % (v,n) for n,v in items])
         evaluation.set_summary("CPU utilization is " + showvals)
-        if self.userdegraded is not None and times.user / 100.0 > self.userdegraded:
-            evaluation.set_health(DEGRADED)
-        if self.systemdegraded is not None and times.system / 100.0 > self.systemdegraded:
-            evaluation.set_health(DEGRADED)
-        if self.iowaitdegraded is not None and times.iowait / 100.0 > self.iowaitdegraded:
-            evaluation.set_health(DEGRADED)
-        if self.idledegraded is not None and times.idle / 100.0 > self.idledegraded:
-            evaluation.set_health(DEGRADED)
-        if self.userfailed is not None and times.user / 100.0 > self.userfailed:
+        if self.userfailed is not None and pct['user'] / 100.0 > self.userfailed:
             evaluation.set_health(FAILED)
-        if self.systemfailed is not None and times.system / 100.0 > self.systemfailed:
+        elif self.systemfailed is not None and pct['system'] / 100.0 > self.systemfailed:
             evaluation.set_health(FAILED)
-        if self.iowaitfailed is not None and times.iowait / 100.0 > self.iowaitfailed:
+        elif self.iowaitfailed is not None and pct['iowait'] / 100.0 > self.iowaitfailed:
             evaluation.set_health(FAILED)
-        if self.idlefailed is not None and times.idle / 100.0 > self.idlefailed:
+        elif self.idlefailed is not None and pct['idle'] / 100.0 > self.idlefailed:
             evaluation.set_health(FAILED)
-        return evaluation
+        elif self.userdegraded is not None and pct['user'] / 100.0 > self.userdegraded:
+            evaluation.set_health(DEGRADED)
+        elif self.systemdegraded is not None and pct['system'] / 100.0 > self.systemdegraded:
+            evaluation.set_health(DEGRADED)
+        elif self.iowaitdegraded is not None and pct['iowait'] / 100.0 > self.iowaitdegraded:
+            evaluation.set_health(DEGRADED)
+        elif self.idledegraded is not None and pct['idle'] / 100.0 > self.idledegraded:
+            evaluation.set_health(DEGRADED)
+        else:
+            evaluation.set_health(HEALTHY)

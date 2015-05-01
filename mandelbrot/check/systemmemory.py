@@ -1,5 +1,3 @@
-import os
-import datetime
 import psutil
 import cifparser
 
@@ -27,10 +25,9 @@ class SystemMemory(Check):
         self.memorydegraded = self.ns.get_size_or_default(cifparser.ROOT_PATH, "memory degraded threshold")
         self.swapfailed = self.ns.get_size_or_default(cifparser.ROOT_PATH, "swap failed threshold")
         self.swapdegraded = self.ns.get_size_or_default(cifparser.ROOT_PATH, "swap degraded threshold")
+        return None
 
-    def execute(self):
-        evaluation = Evaluation()
-        evaluation.set_health(HEALTHY)
+    def execute(self, evaluation, context):
         memory = psutil.virtual_memory()
         memavail = memory.available
         memused = memory.percent
@@ -41,12 +38,13 @@ class SystemMemory(Check):
         swaptotal = swap.total
         evaluation.set_summary("%.1f%% used of %s of physical memory; %.1f%% used of %s of swap" % (
             memused, str(memtotal), swapused, str(swaptotal)))
-        if self.memorydegraded is not None and memory.used > self.memorydegraded:
-            evaluation.set_health(DEGRADED)
-        if self.swapdegraded is not None and swap.used > self.swapdegraded:
-            evaluation.set_health(DEGRADED)
         if self.memoryfailed is not None and memory.used > self.memoryfailed:
             evaluation.set_health(FAILED)
-        if self.swapfailed is not None and swap.used > self.swapfailed:
+        elif self.swapfailed is not None and swap.used > self.swapfailed:
             evaluation.set_health(FAILED)
-        return evaluation
+        elif self.memorydegraded is not None and memory.used > self.memorydegraded:
+            evaluation.set_health(DEGRADED)
+        elif self.swapdegraded is not None and swap.used > self.swapdegraded:
+            evaluation.set_health(DEGRADED)
+        else:
+            evaluation.set_health(HEALTHY)

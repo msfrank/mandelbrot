@@ -1,5 +1,5 @@
 from mandelbrot.check import Check
-from mandelbrot.model.evaluation import Evaluation, HEALTHY
+from mandelbrot.model.evaluation import HEALTHY
 
 class AlwaysHealthy(Check):
     """
@@ -10,8 +10,6 @@ class AlwaysHealthy(Check):
     def get_behavior(self):
         return {}
 
-    def execute(self):
-        evaluation = Evaluation()
-        evaluation.set_summary("check returns healthy")
+    def execute(self, evaluation, context):
         evaluation.set_health(HEALTHY)
-        return evaluation
+        evaluation.set_summary("check returns healthy")

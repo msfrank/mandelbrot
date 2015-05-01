@@ -5,7 +5,7 @@ import unittest.mock
 import cifparser
 import collections
 
-from mandelbrot.model.evaluation import HEALTHY, DEGRADED, FAILED
+from mandelbrot.model.evaluation import *
 
 MockVMem = collections.namedtuple('MockVMem', ['total', 'available',
     'percent', 'used', 'free', 'active', 'inactive', 'buffers', 'cached',
@@ -26,8 +26,9 @@ class TestSystemMemory(unittest.TestCase):
         ns = cifparser.Namespace(values)
         from mandelbrot.check.systemmemory import SystemMemory
         check = SystemMemory(ns)
-        check.init()
-        evaluation = check.execute()
+        evaluation = Evaluation()
+        context = check.init()
+        check.execute(evaluation, context)
         self.assertEqual(evaluation.get_health(), HEALTHY)
 
     @unittest.mock.patch('psutil.virtual_memory')
@@ -43,8 +44,9 @@ class TestSystemMemory(unittest.TestCase):
         ns = cifparser.Namespace(values)
         from mandelbrot.check.systemmemory import SystemMemory
         check = SystemMemory(ns)
-        check.init()
-        evaluation = check.execute()
+        evaluation = Evaluation()
+        context = check.init()
+        check.execute(evaluation, context)
         self.assertEqual(evaluation.get_health(), DEGRADED)
 
     @unittest.mock.patch('psutil.virtual_memory')
@@ -60,6 +62,7 @@ class TestSystemMemory(unittest.TestCase):
         ns = cifparser.Namespace(values)
         from mandelbrot.check.systemmemory import SystemMemory
         check = SystemMemory(ns)
-        check.init()
-        evaluation = check.execute()
+        evaluation = Evaluation()
+        context = check.init()
+        check.execute(evaluation, context)
         self.assertEqual(evaluation.get_health(), FAILED)
