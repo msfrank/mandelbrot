@@ -5,21 +5,31 @@ import logging
 
 log = logging.getLogger("mandelbrot.agent.evaluator")
 
-import mandelbrot.check
-import mandelbrot.registry
 from mandelbrot.model.evaluation import Evaluation
+from mandelbrot.agent.scheduled_check import ScheduledCheck, make_scheduled_check
 from mandelbrot.agent.scheduler import Scheduler
+
+class CheckEvaluation(object):
+    """
+    The result of processing a check.
+    """
+    def __init__(self, check_id, evaluation):
+        self.check_id = check_id
+        self.evaluation = evaluation
 
 class Evaluator(object):
     """
+    The Evaluator takes a list of checks and invokes them according to
+    the given schedule.  The checks are executed asynchronously on the
+    specified executor.
     """
     def __init__(self, event_loop, scheduled_checks, executor):
         """
-        :param event_loop:
+        :param event_loop: The event loop to use for scheduling and executing checks
         :type event_loop: asyncio.AbstractEventLoop
-        :param scheduled_checks:
+        :param scheduled_checks: The list of checks to evaluate
         :type scheduled_checks: list[ScheduledCheck]
-        :param executor:
+        :param executor: The executor which asynchronously executes checks
         :type executor: concurrent.futures.Executor
         """
         self.event_loop = event_loop
@@ -30,6 +40,13 @@ class Evaluator(object):
     @asyncio.coroutine
     def run_until_signaled(self, signal):
         """
+        Run the evaluator as an asynchronous task until the specified
+        signal is set.
+
+        :param signal: The signal which indicates termination
+        :type signal: asyncio.Event
+        :returns: a coroutine for the evaluator task
+        :rtype: asyncio.coroutine
         """
         pending = set()
         shutdown_signal = self.event_loop.create_task(signal.wait())
@@ -72,14 +89,14 @@ class Evaluator(object):
                     check_id = result.check_id
                     check = result.check
                     context = check_contexts[check_id]
-                    check_eval_ctx = CheckEvaluationContext(check_id, check, context)
+                    check_eval_ctx = EvaluationContext(check_id, check, context)
                     log.debug("submitting check %s to executor with context %s", check_id, context)
                     execute_check = self.event_loop.run_in_executor(self.executor, check_eval_ctx.execute)
                     checks_running.add(check_id)
                     pending.add(execute_check)
                     pending.add(scheduler.next_task())
                 # scheduled check has completed, queue it for processing
-                elif isinstance(result, CheckEvaluationContext):
+                elif isinstance(result, EvaluationContext):
                     try:
                         check_id = result.check_id
                         evaluation = result.evaluation
@@ -112,40 +129,59 @@ class Evaluator(object):
 
     def next_evaluation(self):
         """
-        :returns: The next completed check evaluation.
-        :rtype: callable
+        Yields until the next check evaluation is available.
+
+        :returns: A coroutine which yields the next check evaluation.
+        :rtype: asyncio.coroutine
         """
         return self.queue.get()
 
 @contextlib.contextmanager
 def make_evaluator(event_loop, scheduled_checks, check_workers):
     """
-    Create the transport and construct the agent endpoint.
+    Create the evaluator within a context, and clean up associated
+    resources when finished.
 
-    :param event_loop:
+    :param event_loop: The event loop to use for scheduling and executing checks
     :type event_loop: asyncio.AbstractEventLoop
-    :param endpoint_url:
-    :type endpoint_url: urllib.parse.ParseResult
-    :param registry:
-    :type registry: mandelbrot.registry.Registry
-    :param num_workers:
+    :param scheduled_checks: The list of checks to evaluate
+    :type scheduled_checks: list[ScheduledCheck]
+    :param num_workers: The number of worker processes to create
     :type num_workers: int
-    :return:
+    :returns: The Evaluator constructed from the specified scheduled checks
     """
     check_executor = concurrent.futures.ProcessPoolExecutor(check_workers)
     yield Evaluator(event_loop, scheduled_checks, check_executor)
     check_executor.shutdown()
 
-class CheckEvaluationContext(object):
+class EvaluationContext(object):
     """
+    Contains all context necessary to evaluate a check on an executor.
+    This needs to be picklable, since we are likely using a process pool
+    to execute the checks.
     """
     def __init__(self, check_id, check, context):
+        """
+        :param check_id: The check identifier, which is unique in the agent
+        :type check_id: cifparser.Path
+        :param check: The check instance
+        :type check: mandelbrot.check.Check
+        :param context: Data which persists between check executions
+        :type context: object
+        """
         self._check = check
         self.check_id = check_id
         self.context = context
         self.evaluation = Evaluation()
 
     def execute(self):
+        """
+        Execute the check and return the entire context.  If the check
+        raises an exception then return an EvaluationException with the
+        exception inside instead.
+
+        :returns: The EvaluationContext or an EvaluationException
+        """
         try:
             self._check.execute(self.evaluation, self.context)
             return self
@@ -154,57 +190,14 @@ class CheckEvaluationContext(object):
 
 class EvaluationException(Exception):
     """
+    Wraps any exception which is raised during check execution.
     """
     def __init__(self, check_id, cause):
+        """
+        :param check_id: The check identifier, which is unique in the agent
+        :type check_id: cifparser.Path
+        :param cause: The exception raised by the check
+        :type cause: Exception
+        """
         self.check_id = check_id
         self.cause = cause
-
-class CheckEvaluation(object):
-    """
-    """
-    def __init__(self, check_id, evaluation):
-        self.check_id = check_id
-        self.evaluation = evaluation
-
-class ScheduledCheck(object):
-    """
-    """
-    def __init__(self, check_id, check, delay, offset, jitter):
-        """
-        :param check_id:
-        :type check_id: str
-        :param check:
-        :type check: mandelbrot.checks.Check
-        :param delay:
-        :type delay: float
-        :param offset:
-        :type offset: float
-        :param jitter:
-        :type jitter: float
-        """
-        self.check_id = check_id
-        self.check = check
-        self.delay = delay
-        self.offset = offset
-        self.jitter = jitter
-
-def make_scheduled_check(instance_check, registry):
-    """
-
-    :param instance_check:
-    :type instance_check: mandelbrot.instance.InstanceCheck
-    :param registry:
-    :type registry: mandelbrot.registry.Registry
-    :rtype: ScheduledCheck
-    """
-    factory_name, _, requirement = instance_check.check_type.partition(':')
-    if requirement == '':
-        requirement = mandelbrot.registry.require_mandelbrot
-    check_factory = registry.lookup_factory(mandelbrot.check.entry_point_type,
-        factory_name, mandelbrot.check.Check, requirement)
-    check = check_factory(instance_check.check_params)
-    log.debug("instantiating check %s with requirement '%s'",
-        instance_check.check_id, instance_check.check_type)
-    scheduled_check = ScheduledCheck(instance_check.check_id, check,
-        instance_check.delay, instance_check.offset, instance_check.jitter)
-    return scheduled_check
