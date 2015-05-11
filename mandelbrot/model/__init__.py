@@ -29,3 +29,27 @@ class SealableMixin(object):
 
     def __sealed(self, key, value):
         raise SealedException(self, key)
+
+_constructors = {}
+
+def add_constructor(model_class, constructor):
+    _constructors[model_class] = constructor
+
+def construct(model_class, structure):
+    """
+
+    :param model_class:
+    :type model_class: type
+    :param structure:
+    :type structure: object
+    :return:
+    """
+    assert isinstance(type, model_class)
+    try:
+        factory = _constructors[model_class]
+        return factory(structure)
+    except KeyError:
+        raise TypeError("don't know how to construct for type {}".format(model_class.__class__.__name__))
+
+
+__all__ = [ 'construct' ]

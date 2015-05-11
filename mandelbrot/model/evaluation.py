@@ -1,13 +1,7 @@
 import datetime
 
-from mandelbrot.model import StructuredMixin, SealableMixin
-
-HEALTHY  = 'healthy'
-DEGRADED = 'degraded'
-FAILED   = 'failed'
-UNKNOWN  = 'unknown'
-
-health_types = (HEALTHY, DEGRADED, FAILED, UNKNOWN)
+from mandelbrot.model import StructuredMixin
+from mandelbrot.model.constants import CheckHealth, health_types
 
 class Evaluation(StructuredMixin):
     """
@@ -17,6 +11,11 @@ class Evaluation(StructuredMixin):
         self.health = None
         self.metrics = {}
         self.timestamp = None
+
+    HEALTHY = CheckHealth.HEALTHY
+    DEGRADED = CheckHealth.DEGRADED
+    FAILED = CheckHealth.FAILED
+    UNKNOWN = CheckHealth.UNKNOWN
 
     def get_summary(self):
         return self.summary

@@ -48,11 +48,13 @@ setup(
         'mandelbrot.check',
         'mandelbrot.command',
         'mandelbrot.model',
+        'mandelbrot.query',
         'mandelbrot.transport',
         ],
     entry_points={
         'console_scripts': [
-            'mandelbrot=mandelbrot.command:main',
+            'mandelbrot-agent=mandelbrot.command:main',
+            'mandelbrot-query=mandelbrot.command.query:main',
             ],
         'mandelbrot.check': [
             'AlwaysHealthy=mandelbrot.check.dummy:AlwaysHealthy',
