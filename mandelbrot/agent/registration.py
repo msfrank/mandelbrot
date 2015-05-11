@@ -9,7 +9,7 @@ from mandelbrot.model.registration import Registration
 from mandelbrot.model.check import Check
 
 default_join_timeout = datetime.timedelta(minutes=5)
-default_probe_timeout = datetime.timedelta(minutes=1)
+default_check_timeout = datetime.timedelta(minutes=1)
 default_alert_timeout = datetime.timedelta(minutes=2)
 default_retirement_age = datetime.timedelta(days=1)
 
@@ -45,8 +45,8 @@ def make_registration(agent_id, metadata, scheduled_checks):
         check.set_join_timeout(join_timeout)
         alert_timeout = or_default(default_alert_timeout, scheduled_check.check.get_alert_timeout)
         check.set_alert_timeout(alert_timeout)
-        probe_timeout = or_default(default_probe_timeout, scheduled_check.check.get_probe_timeout)
-        check.set_probe_timeout(probe_timeout)
+        check_timeout = or_default(default_check_timeout, scheduled_check.check.get_check_timeout)
+        check.set_check_timeout(check_timeout)
         retirement_age = or_default(default_retirement_age, scheduled_check.check.get_retirement_age)
         check.set_retirement_age(retirement_age)
         registration.set_check(check_id, check)

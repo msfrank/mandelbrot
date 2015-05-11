@@ -47,21 +47,25 @@ class HttpTransport(Transport):
             try:
                 prepared = self.session.prepare_request(request)
                 response = self.session.send(prepared)
-                if response.status_code == 400:
-                    raise BadRequest()
-                if response.status_code == 403:
-                    raise Forbidden()
-                if response.status_code == 404:
-                    raise ResourceNotFound()
-                if response.status_code == 409:
-                    raise Conflict()
-                if response.status_code == 500:
-                    raise InternalError()
-                if response.status_code == 501:
-                    raise NotImplemented()
-                if response.status_code == 503:
-                    raise RetryLater()
-                return response
+                try:
+                    if response.status_code == 400:
+                        raise BadRequest()
+                    if response.status_code == 403:
+                        raise Forbidden()
+                    if response.status_code == 404:
+                        raise ResourceNotFound()
+                    if response.status_code == 409:
+                        raise Conflict()
+                    if response.status_code == 500:
+                        raise InternalError()
+                    if response.status_code == 501:
+                        raise NotImplemented()
+                    if response.status_code == 503:
+                        raise RetryLater()
+                    return response
+                except Exception:
+                    self.log_response_and_entity(response)
+                    raise
             except Exception as e:
                 raise TransportException(e)
         return self.event_loop.run_in_executor(self.executor, send_request)
@@ -69,12 +73,12 @@ class HttpTransport(Transport):
     def log_response(self, response):
         request = response.request
         log.debug("%s %s returns %d %s", request.method,
-            request.path, response.status_code, response.reason)
+            request.url, response.status_code, response.reason)
 
     def log_response_and_entity(self, response):
         request = response.request
         log.debug("%s %s returns %d %s:\n%s", request.method,
-            request.path, response.status_code, response.reason, response.text())
+            request.url, response.status_code, response.reason, response.text)
 
     @asyncio.coroutine
     def create_item(self, path, item):

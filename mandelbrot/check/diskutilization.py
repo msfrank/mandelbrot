@@ -14,7 +14,7 @@ class DiskUtilization(Check):
     disk failed threshold   = USAGE: size
     """
     def get_behavior_type(self):
-        return "io.mandelbrot.core.system.ScalarProbe"
+        return "io.mandelbrot.core.system.ScalarCheck"
 
     def get_behavior(self):
         return {}

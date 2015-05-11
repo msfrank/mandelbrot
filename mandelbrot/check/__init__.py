@@ -16,8 +16,8 @@ class Check(object):
     def get_join_timeout(self):
         return self.ns.get_timedelta(cifparser.ROOT_PATH, "join timeout")
 
-    def get_probe_timeout(self):
-        return self.ns.get_timedelta(cifparser.ROOT_PATH, "probe timeout")
+    def get_check_timeout(self):
+        return self.ns.get_timedelta(cifparser.ROOT_PATH, "check timeout")
 
     def get_alert_timeout(self):
         return self.ns.get_timedelta(cifparser.ROOT_PATH, "alert timeout")

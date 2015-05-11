@@ -82,13 +82,14 @@ class Registration(StructuredMixin):
 
     def destructure(self):
         structure = {}
-        structure['systemType'] = self.agent_type
+        structure['agentId'] = str(self.agent_id)
+        structure['agentType'] = self.agent_type
         structure['metadata'] = self.metadata
         checks = {}
         for check_id,check in self.checks.items():
             check_id = str(check_id)
             checks[check_id] = check.destructure()
-        structure['probes'] = checks
+        structure['checks'] = checks
         metrics = {}
         for (check_id,metric_name),metric in self.metrics.items():
             metric_source = str(check_id) + ':' + metric_name

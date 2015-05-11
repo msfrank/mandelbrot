@@ -28,18 +28,18 @@ class Check(StructuredMixin):
         self.behavior_type = behavior_type
 
     def get_join_timeout(self):
-        return self.policy['joinTimeout']
+        return self.policy['joiningTimeout']
 
     def set_join_timeout(self, timeout):
         assert isinstance(timeout, datetime.timedelta)
-        self.policy['joinTimeout'] = timeout.total_seconds()
+        self.policy['joiningTimeout'] = timeout.total_seconds()
 
-    def get_probe_timeout(self):
-        return self.policy['probeTimeout']
+    def get_check_timeout(self):
+        return self.policy['checkTimeout']
 
-    def set_probe_timeout(self, timeout):
+    def set_check_timeout(self, timeout):
         assert isinstance(timeout, datetime.timedelta)
-        self.policy['probeTimeout'] = timeout.total_seconds()
+        self.policy['checkTimeout'] = timeout.total_seconds()
 
     def get_alert_timeout(self):
         return self.policy['alertTimeout']
@@ -91,7 +91,7 @@ class Check(StructuredMixin):
 
     def destructure(self):
         structure = {}
-        structure['probeType'] = self.behavior_type
+        structure['checkType'] = self.behavior_type
         structure['policy'] =  self.policy
         structure['properties'] = self.properties
         structure['metadata'] = self.metadata
