@@ -31,22 +31,14 @@ class Endpoint(object):
         return agent
 
     @asyncio.coroutine
-    def register_agent(self, registration, num_tries):
+    def register_agent(self, registration):
         """
         :param registration:
         :type registration: mandelbrot.model.registration.Registration
-        :param num_tries:
-        :type num_tries: int
         """
         item = registration.destructure()
-        tries_left = num_tries
-        while tries_left:
-            try:
-                agent_metadata = yield from self.transport.create_item('v2/agents', item)
-                return agent_metadata
-            except RetryLater:
-                tries_left -= 1
-        raise RetryLater("failed to register after {} attempts".format(num_tries))
+        agent_metadata = yield from self.transport.create_item('v2/agents', item)
+        return agent_metadata
 
     @asyncio.coroutine
     def update_agent(self, agent_id, registration):

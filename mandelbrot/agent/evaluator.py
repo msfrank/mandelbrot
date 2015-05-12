@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import contextlib
+import datetime
 import logging
 
 log = logging.getLogger("mandelbrot.agent.evaluator")
@@ -172,7 +173,9 @@ class EvaluationContext(object):
         self._check = check
         self.check_id = check_id
         self.context = context
-        self.evaluation = Evaluation()
+        self.evaluation = None
+
+    UTC = datetime.timezone(datetime.timedelta(0), 'Z')
 
     def execute(self):
         """
@@ -183,6 +186,8 @@ class EvaluationContext(object):
         :returns: The EvaluationContext or an EvaluationException
         """
         try:
+            self.evaluation = Evaluation()
+            self.evaluation.set_timestamp(datetime.datetime.now(EvaluationContext.UTC))
             self._check.execute(self.evaluation, self.context)
             return self
         except Exception as e:

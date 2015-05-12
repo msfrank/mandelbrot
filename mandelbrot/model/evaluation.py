@@ -58,7 +58,7 @@ class Evaluation(StructuredMixin):
     def destructure(self):
         structure = {}
         if self.timestamp is not None:
-            structure['timestamp'] = self.timestamp
+            structure['timestamp'] = self.timestamp.strftime("%Y-%m-%dT%H:%M:%S%Z")
         if self.summary is not None:
             structure['summary'] = self.summary
         if self.health is not None:

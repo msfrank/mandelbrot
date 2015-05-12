@@ -44,30 +44,27 @@ class HttpTransport(Transport):
         :rtype: asyncio.Future
         """
         def send_request():
+            prepared = self.session.prepare_request(request)
+            response = self.session.send(prepared)
             try:
-                prepared = self.session.prepare_request(request)
-                response = self.session.send(prepared)
-                try:
-                    if response.status_code == 400:
-                        raise BadRequest()
-                    if response.status_code == 403:
-                        raise Forbidden()
-                    if response.status_code == 404:
-                        raise ResourceNotFound()
-                    if response.status_code == 409:
-                        raise Conflict()
-                    if response.status_code == 500:
-                        raise InternalError()
-                    if response.status_code == 501:
-                        raise NotImplemented()
-                    if response.status_code == 503:
-                        raise RetryLater()
-                    return response
-                except Exception:
-                    self.log_response_and_entity(response)
-                    raise
-            except Exception as e:
-                raise TransportException(e)
+                if response.status_code == 400:
+                    raise BadRequest()
+                if response.status_code == 403:
+                    raise Forbidden()
+                if response.status_code == 404:
+                    raise ResourceNotFound()
+                if response.status_code == 409:
+                    raise Conflict()
+                if response.status_code == 500:
+                    raise InternalError()
+                if response.status_code == 501:
+                    raise NotImplemented()
+                if response.status_code == 503:
+                    raise RetryLater()
+                return response
+            except Exception:
+                self.log_response_and_entity(response)
+                raise
         return self.event_loop.run_in_executor(self.executor, send_request)
 
     def log_response(self, response):

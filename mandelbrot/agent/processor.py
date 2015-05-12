@@ -8,7 +8,7 @@ log = logging.getLogger("mandelbrot.agent.processor")
 from mandelbrot.agent.endpoint import make_endpoint
 from mandelbrot.agent.registration import make_registration
 from mandelbrot.agent.evaluator import make_scheduled_check, make_evaluator, CheckEvaluation
-from mandelbrot.transport import TransportException
+from mandelbrot.transport import TransportException, Conflict
 
 default_join_timeout = datetime.timedelta(minutes=5)
 default_probe_timeout = datetime.timedelta(minutes=1)
@@ -68,8 +68,12 @@ class Processor(object):
         with make_endpoint(self.event_loop, endpoint_url, self.registry, 10) as endpoint:
 
             # register agent with the endpoint
-            log.debug("registering %s with endpoint", agent_id)
-            yield from endpoint.register_agent(registration, 1)
+            try:
+                log.debug("registering %s with endpoint", agent_id)
+                yield from endpoint.register_agent(registration)
+            except Conflict:
+                log.debug("agent %s exists, updating endpoint", agent_id)
+                yield from endpoint.update_agent(agent_id, registration)
 
             # construct the evaluator
             with make_evaluator(self.event_loop, scheduled_checks, 10) as evaluator:

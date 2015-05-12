@@ -32,28 +32,28 @@ class Check(StructuredMixin):
 
     def set_join_timeout(self, timeout):
         assert isinstance(timeout, datetime.timedelta)
-        self.policy['joiningTimeout'] = timeout.total_seconds()
+        self.policy['joiningTimeout'] = int(timeout / datetime.timedelta(milliseconds=1))
 
     def get_check_timeout(self):
         return self.policy['checkTimeout']
 
     def set_check_timeout(self, timeout):
         assert isinstance(timeout, datetime.timedelta)
-        self.policy['checkTimeout'] = timeout.total_seconds()
+        self.policy['checkTimeout'] = int(timeout / datetime.timedelta(milliseconds=1))
 
     def get_alert_timeout(self):
         return self.policy['alertTimeout']
 
     def set_alert_timeout(self, timeout):
         assert isinstance(timeout, datetime.timedelta)
-        self.policy['alertTimeout'] = timeout.total_seconds()
+        self.policy['alertTimeout'] = int(timeout / datetime.timedelta(milliseconds=1))
 
     def get_retirement_age(self):
         return self.policy['leavingTimeout']
 
     def set_retirement_age(self, timeout):
         assert isinstance(timeout, datetime.timedelta)
-        self.policy['leavingTimeout'] = timeout.total_seconds()
+        self.policy['leavingTimeout'] = int(timeout / datetime.timedelta(milliseconds=1))
 
     def get_property(self, property_name):
         return self.properties[property_name]
