@@ -28,7 +28,7 @@ class TestProcessor(unittest.TestCase):
         event_loop = asyncio.new_event_loop()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         evaluator = Evaluator(event_loop, [self.check1], executor)
-        agent_id = cifparser.make_path("agent")
+        agent_id = cifparser.make_path("foo.local")
         transport = MockTransport()
         endpoint = Endpoint(transport)
         shutdown_signal = asyncio.Event(loop=event_loop)
@@ -36,8 +36,8 @@ class TestProcessor(unittest.TestCase):
         process_task = process_evaluations(event_loop, evaluator, agent_id, endpoint, shutdown_signal)
         event_loop.run_until_complete(asyncio.wait_for(process_task, 3.0, loop=event_loop))
         self.assertListEqual(transport.mock_create_item.call_args_list, [
-            unittest.mock.call('v2/systems/agent/probes/id1', {'summary': 'check returns healthy', 'health': 'healthy'}),
-            unittest.mock.call('v2/systems/agent/probes/id1', {'summary': 'check returns healthy', 'health': 'healthy'}),
-            unittest.mock.call('v2/systems/agent/probes/id1', {'summary': 'check returns healthy', 'health': 'healthy'})
+            unittest.mock.call('v2/agents/foo.local/checks/id1', {'summary': 'check returns healthy', 'health': 'healthy'}),
+            unittest.mock.call('v2/agents/foo.local/checks/id1', {'summary': 'check returns healthy', 'health': 'healthy'}),
+            unittest.mock.call('v2/agents/foo.local/checks/id1', {'summary': 'check returns healthy', 'health': 'healthy'})
         ])
 

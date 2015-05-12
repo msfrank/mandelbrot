@@ -1,3 +1,5 @@
+import asyncio
+
 entry_point_type = 'mandelbrot.transport'
 
 class Transport(object):
@@ -16,6 +18,7 @@ class Transport(object):
         self.event_loop = event_loop
         self.executor = executor
 
+    @asyncio.coroutine
     def create_item(self, path, item):
         """
         Create a new item in the collection specified by path.  If the
@@ -31,6 +34,7 @@ class Transport(object):
         """
         raise NotImplementedError()
 
+    @asyncio.coroutine
     def replace_item(self, path, item):
         """
         Replace the existing item at path with the specified item.  If the
@@ -46,6 +50,7 @@ class Transport(object):
         """
         raise NotImplementedError()
 
+    @asyncio.coroutine
     def delete_item(self, path):
         """
         Delete the existing item at path.  If the item doesn't exist,
@@ -59,6 +64,7 @@ class Transport(object):
         """
         raise NotImplementedError()
 
+    @asyncio.coroutine
     def get_item(self, path, filters):
         """
         Retrieve the existing item at path and filter the result.  If the
@@ -74,6 +80,7 @@ class Transport(object):
         """
         raise NotImplementedError()
 
+    @asyncio.coroutine
     def patch_item(self, path, fields, constraints):
         """
         Conditionally replace the specified fields for the item at the
@@ -92,6 +99,7 @@ class Transport(object):
         """
         raise NotImplementedError()
 
+    @asyncio.coroutine
     def get_collection(self, path, matchers, count, last):
         """
         Retrieve items in the specified collection.  If matchers is specified,
@@ -114,6 +122,7 @@ class Transport(object):
         """
         raise NotImplementedError()
 
+    @asyncio.coroutine
     def delete_collection(self, path, params):
         """
         :raises BadRequest:

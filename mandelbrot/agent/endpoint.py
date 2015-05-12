@@ -42,8 +42,8 @@ class Endpoint(object):
         tries_left = num_tries
         while tries_left:
             try:
-                yield from self.transport.create_item('v2/agents', item)
-                return None
+                agent_metadata = yield from self.transport.create_item('v2/agents', item)
+                return agent_metadata
             except RetryLater:
                 tries_left -= 1
         raise RetryLater("failed to register after {} attempts".format(num_tries))
@@ -57,8 +57,8 @@ class Endpoint(object):
         :rtype: asyncio.Future[ResponseItem]
         """
         path = 'v2/agents/' + str(agent_id)
-        yield from self.transport.replace_item(path, registration.destructure())
-        return None
+        agent_metadata = yield from self.transport.replace_item(path, registration.destructure())
+        return agent_metadata
 
     @asyncio.coroutine
     def unregister_agent(self, agent_id):
