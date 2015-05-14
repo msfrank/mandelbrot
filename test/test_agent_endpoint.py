@@ -29,7 +29,7 @@ class TestEndpoint(unittest.TestCase):
         endpoint = Endpoint(transport)
         registration = Registration()
         registration.set_agent_id(self.agent_id)
-        future = asyncio.wait_for(endpoint.register_agent(registration, 1), 5.0, loop=event_loop)
+        future = asyncio.wait_for(endpoint.register_agent(registration), 5.0, loop=event_loop)
         response = event_loop.run_until_complete(future)
         self.assertIs(response, agent_metadata)
         self.assertEqual(transport.mock_create_item.call_count, 1)

@@ -82,16 +82,16 @@ class HttpTransport(Transport):
         request = requests.Request(
             method='POST', url=self.absolute_url(path), json=item)
         response = yield from self.request(request)
-        self.log_response(response)
-        return None
+        self.log_response_and_entity(response)
+        return response.json()
 
     @asyncio.coroutine
     def replace_item(self, path, item):
         request = requests.Request(
             method='PUT', url=self.absolute_url(path), json=item)
         response = yield from self.request(request)
-        self.log_response(response)
-        return None
+        self.log_response_and_entity(response)
+        return response.json()
 
     @asyncio.coroutine
     def delete_item(self, path):
@@ -106,7 +106,7 @@ class HttpTransport(Transport):
         request = requests.Request(
             method='GET', url=self.absolute_url(path), params=filters)
         response = yield from self.request(request)
-        self.log_response(response)
+        self.log_response_and_entity(response)
         return response.json()
 
     @asyncio.coroutine
@@ -123,7 +123,7 @@ class HttpTransport(Transport):
         request = requests.Request(
             method='GET', url=self.absolute_url(path), params=params)
         response = yield from self.request(request)
-        self.log_response(response)
+        self.log_response_and_entity(response)
         return response.json()
 
     @asyncio.coroutine

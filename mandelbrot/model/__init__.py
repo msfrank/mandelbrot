@@ -44,12 +44,12 @@ def construct(model_class, structure):
     :type structure: object
     :return:
     """
-    assert isinstance(type, model_class)
+    assert isinstance(model_class, type)
     try:
         factory = _constructors[model_class]
         return factory(structure)
     except KeyError:
-        raise TypeError("don't know how to construct for type {}".format(model_class.__class__.__name__))
+        raise TypeError("don't know how to construct for type {}".format(model_class.__name__))
 
 
 __all__ = [ 'construct' ]

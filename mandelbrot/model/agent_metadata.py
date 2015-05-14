@@ -85,6 +85,7 @@ class AgentMetadataPage(StructuredMixin):
         self.exhausted = exhausted
 
 def _construct_agent_metadata(structure):
+    print("metadata: " + str(structure))
     agent_metadata = AgentMetadata()
     agent_metadata.set_agent_id(cifparser.make_path(structure['agentId']))
     joined_on = datetime.datetime(1970, 1, 1) + datetime.timedelta(milliseconds=int(structure['joinedOn']))

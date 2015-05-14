@@ -69,10 +69,13 @@ class CheckCondition(StructuredMixin):
         structure['timestamp'] = self.timestamp.isoformat()
         structure['lifecycle'] = self.lifecycle
         structure['health'] = self.health
-        structure['summary'] = self.summary
-        structure['correlation'] = self.correlation
-        structure['acknowledged'] = self.acknowledged
         structure['squelched'] = self.squelched
+        if self.summary is not None:
+            structure['summary'] = self.summary
+        if self.correlation is not None:
+            structure['correlation'] = self.correlation
+        if self.acknowledged is not None:
+            structure['acknowledged'] = self.acknowledged
         return structure
 
 class CheckConditionPage(StructuredMixin):
@@ -110,10 +113,13 @@ def _construct_check_condition(structure):
     check_condition.set_timestamp(timestamp)
     check_condition.set_lifecycle(structure['lifecycle'])
     check_condition.set_health(structure['health'])
-    check_condition.set_summary(structure['summary'])
-    check_condition.set_correlation(structure['correlation'])
-    check_condition.set_acknowledged(structure['acknowledged'])
     check_condition.set_squelched(structure['squelched'])
+    if 'summary' in structure:
+        check_condition.set_summary(structure['summary'])
+    if 'correlation' in structure:
+        check_condition.set_correlation(structure['correlation'])
+    if 'acknowledged' in structure:
+        check_condition.set_acknowledged(structure['acknowledged'])
     return check_condition
 
 add_constructor(CheckCondition, _construct_check_condition)

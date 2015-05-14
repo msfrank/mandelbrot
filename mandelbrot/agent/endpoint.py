@@ -7,6 +7,9 @@ log = logging.getLogger("mandelbrot.agent.endpoint")
 
 import mandelbrot.transport
 from mandelbrot.transport import RetryLater
+from mandelbrot.model.agent_metadata import AgentMetadata
+from mandelbrot.model.registration import Registration
+from mandelbrot.model import construct
 
 class Endpoint(object):
     """
@@ -27,8 +30,8 @@ class Endpoint(object):
         :rtype:
         """
         path = 'v2/agents/' + str(agent_id)
-        agent = yield from self.transport.get_item(path, {})
-        return agent
+        registration = yield from self.transport.get_item(path, {})
+        return construct(Registration, registration)
 
     @asyncio.coroutine
     def register_agent(self, registration):
@@ -38,7 +41,7 @@ class Endpoint(object):
         """
         item = registration.destructure()
         agent_metadata = yield from self.transport.create_item('v2/agents', item)
-        return agent_metadata
+        return construct(AgentMetadata, agent_metadata)
 
     @asyncio.coroutine
     def update_agent(self, agent_id, registration):
@@ -50,7 +53,7 @@ class Endpoint(object):
         """
         path = 'v2/agents/' + str(agent_id)
         agent_metadata = yield from self.transport.replace_item(path, registration.destructure())
-        return agent_metadata
+        return construct(AgentMetadata, agent_metadata)
 
     @asyncio.coroutine
     def unregister_agent(self, agent_id):
