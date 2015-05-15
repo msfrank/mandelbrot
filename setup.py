@@ -53,7 +53,7 @@ setup(
         ],
     entry_points={
         'console_scripts': [
-            'mandelbrot-agent=mandelbrot.command:main',
+            'mandelbrot-agent=mandelbrot.command.agent:main',
             'mandelbrot-query=mandelbrot.command.query:main',
             ],
         'mandelbrot.check': [

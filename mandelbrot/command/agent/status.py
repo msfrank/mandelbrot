@@ -6,7 +6,7 @@ import errno
 
 from mandelbrot.log import utility_format
 
-def status_main(ns):
+def run_command(ns):
     """
     """
     if ns.verbose == True:

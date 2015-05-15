@@ -7,7 +7,7 @@ import cifparser
 from mandelbrot.instance import create_instance, InstanceCheck
 from mandelbrot.log import utility_format
 
-def init_main(ns):
+def run_command(ns):
     """
     """
     if ns.verbose == True:

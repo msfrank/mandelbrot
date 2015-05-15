@@ -27,7 +27,6 @@ def run_command(ns):
     # construct the endpoint
     log.debug("constructing endpoint %s", endpoint_url)
     with make_endpoint(event_loop, endpoint_url, registry, 10) as endpoint:
-
         check_condition = event_loop.run_until_complete(endpoint.get_current_condition(agent_id, check_id))
         pprint.pprint(check_condition.destructure())
     return 0

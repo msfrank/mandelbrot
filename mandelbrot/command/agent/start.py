@@ -25,7 +25,7 @@ def with_timeout(timeout, lock):
     yield lock
     lock.release()
 
-def start_main(ns):
+def run_command(ns):
     """
     """
     if ns.debug:

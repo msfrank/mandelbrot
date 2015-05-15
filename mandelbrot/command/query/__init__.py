@@ -2,12 +2,11 @@ import sys
 import argparse
 import traceback
 
-import mandelbrot.command.query_condition
-
 def main():
     """
     """
     try:
+        import mandelbrot.command.query.condition as condition
 
         # create the top-level parser
         parser = argparse.ArgumentParser(prog='mandelbrot-query')
@@ -15,7 +14,7 @@ def main():
         subparsers = parser.add_subparsers()
 
         query_condition = subparsers.add_parser('condition')
-        query_condition.set_defaults(main=mandelbrot.command.query_condition.run_command)
+        query_condition.set_defaults(main=condition.run_command)
         query_condition.add_argument('-i', '--agent-id', metavar='NAME', dest='agent_id')
         query_condition.add_argument('-u', '--endpoint-url', metavar='URL', dest='endpoint_url')
         query_condition.add_argument('-v', '--verbose', action='store_true')
