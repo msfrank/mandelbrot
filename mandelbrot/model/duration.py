@@ -20,6 +20,9 @@ class Duration(StructuredMixin):
 
 def _construct_duration(structure):
     assert isinstance(structure, int)
-    return datetime.timedelta(milliseconds=structure)
+    td = datetime.timedelta(milliseconds=structure)
+    duration = Duration()
+    duration.set_timedelta(td)
+    return duration
 
 add_constructor(Duration, _construct_duration)

@@ -2,6 +2,7 @@ import datetime
 import cifparser
 
 from mandelbrot.model import StructuredMixin, add_constructor, construct
+from mandelbrot.model.timestamp import Timestamp
 
 class AgentMetadata(StructuredMixin):
     """
@@ -23,14 +24,14 @@ class AgentMetadata(StructuredMixin):
         return self.joined_on
 
     def set_joined_on(self, joined_on):
-        assert isinstance(joined_on, datetime.datetime)
+        assert isinstance(joined_on, Timestamp)
         self.joined_on = joined_on
 
     def get_last_update(self):
         return self.last_update
 
     def set_last_update(self, last_update):
-        assert isinstance(last_update, datetime.datetime)
+        assert isinstance(last_update, Timestamp)
         self.last_update = last_update
 
     def get_lsn(self):
@@ -43,8 +44,8 @@ class AgentMetadata(StructuredMixin):
     def destructure(self):
         structure = {}
         structure['agentId'] = str(self.agent_id)
-        structure['joinedOn'] = self.joined_on.isoformat()
-        structure['lastUpdate'] = self.last_update.isoformat()
+        structure['joinedOn'] = self.joined_on.destructure()
+        structure['lastUpdate'] = self.last_update.destructure()
         structure['lsn'] = self.lsn
         return structure
 
@@ -85,12 +86,11 @@ class AgentMetadataPage(StructuredMixin):
         self.exhausted = exhausted
 
 def _construct_agent_metadata(structure):
-    print("metadata: " + str(structure))
     agent_metadata = AgentMetadata()
     agent_metadata.set_agent_id(cifparser.make_path(structure['agentId']))
-    joined_on = datetime.datetime(1970, 1, 1) + datetime.timedelta(milliseconds=int(structure['joinedOn']))
+    joined_on = construct(Timestamp, structure['joinedOn'])
     agent_metadata.set_joined_on(joined_on)
-    last_update = datetime.datetime(1970, 1, 1) + datetime.timedelta(milliseconds=int(structure['lastUpdate']))
+    last_update = construct(Timestamp, structure['lastUpdate'])
     agent_metadata.set_last_update(last_update)
     agent_metadata.set_lsn(structure['lsn'])
     return agent_metadata

@@ -15,7 +15,7 @@ class Timestamp(StructuredMixin):
 
     def set_datetime(self, value):
         assert isinstance(value, datetime.datetime)
-        assert value.tzinfo.utcoffset == 0
+        assert value.tzinfo.utcoffset(None).total_seconds() == 0.0
         self.datetime = value
 
     def destructure(self):
@@ -23,7 +23,9 @@ class Timestamp(StructuredMixin):
 
 def _construct_timestamp(structure):
     assert isinstance(structure, int)
-    timestamp = structure / 1000.0
-    return datetime.datetime.fromtimestamp(timestamp, UTC)
+    dt = datetime.datetime.fromtimestamp(structure / 1000.0, UTC)
+    timestamp = Timestamp()
+    timestamp.set_datetime(dt)
+    return timestamp
 
 add_constructor(Timestamp, _construct_timestamp)
