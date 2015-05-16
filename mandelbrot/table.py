@@ -1,18 +1,26 @@
 import sys
+import itertools
 import shutil
-import collections
 
 class Column(object):
-    def __init__(self, name, field, minimum_width=None, justify_left=True, expand=False, wrap_words=True):
+    """
+    """
+    def __init__(self, name, field, minimum_width=None, justify_left=True, expand=False, wrap_words=True, normalize=True):
         self.name = name
         self.field = field
         self.minimum_width = minimum_width
         self.justify_left = justify_left
         self.expand = expand
         self.wrap_words = wrap_words
+        self.normalize = normalize
+
+    def render_value(self, value):
+        if self.normalize:
+            return ' '.join(str(value).split())
+        return str(value)
 
 class ColumnStats(object):
-    def __init__(self, smallest_cell, largest_cell, smallest_cell_word):
+    def __init__(self, smallest_cell=0, largest_cell=0, smallest_cell_word=0):
         self.smallest_cell = smallest_cell
         self.largest_cell = largest_cell
         self.smallest_cell_word = smallest_cell_word
@@ -22,32 +30,12 @@ class Rowstore(object):
     """
     def __init__(self):
         self.rows = []
-        self.column_stats = {}
 
     def append_row(self, row):
         """
         :param row:
         :type row: dict[str,str]
         """
-        for field,value in row.items():
-
-            # normalize each field value
-            words = value.split()
-            normalized_value = ' '.join(words)
-            row[field] = normalized_value
-
-            # update column stats
-            stats = self.column_stats.get(field, ColumnStats(0, 0, 0))
-            num_chars = len(normalized_value)
-            smallest_word = min(map(lambda word: len(word), words))
-            if num_chars < stats.smallest_cell:
-                stats.smallest_cell = num_chars
-            if num_chars > stats.largest_cell:
-                stats.largest_cell = num_chars
-            if smallest_word < stats.smallest_cell_word:
-                stats.smallest_cell_word = smallest_word
-
-        # add the normalized row to the rowstore
         self.rows.append(row)
 
     def __iter__(self):
@@ -72,6 +60,8 @@ class Terminal(Output):
         return self.width
 
     def write_line(self, line):
+        """
+        """
         if len(line) > self.width:
             line = line[0:self.width]
         self.f.write(line + '\n')
@@ -98,6 +88,42 @@ class Table(object):
         for line in self.render_table(rowstore, output_width):
             output.write_line(line)
 
+    def calculate_column_stats(self, rowstore):
+        """
+        :param rowstore:
+        :return:
+        """
+        columns = {column.field:column for column in self.columns}
+        column_stats = {field:ColumnStats() for field in columns.keys()}
+
+        for row in rowstore:
+            for field,value in row.items():
+                try:
+                    column = columns[field]
+                    stats = column_stats[field]
+
+                    # possibly convert and normalize each field value
+                    if column.normalize:
+                        words = str(value).split()
+                        normalized_value = ' '.join(words)
+                    else:
+                        normalized_value = str(value)
+                        words = [normalized_value]
+
+                    # update column stats
+                    num_chars = len(normalized_value)
+                    smallest_word = min(map(lambda word: len(word), words))
+                    if stats.smallest_cell == 0 or num_chars < stats.smallest_cell:
+                        stats.smallest_cell = num_chars
+                    if stats.largest_cell == 0 or num_chars > stats.largest_cell:
+                        stats.largest_cell = num_chars
+                    if stats.smallest_cell_word == 0 or smallest_word < stats.smallest_cell_word:
+                        stats.smallest_cell_word = smallest_word
+
+                except KeyError:
+                    pass
+        return column_stats
+
     def render_table(self, rowstore, output_width):
         """
         :param rowstore:
@@ -107,17 +133,25 @@ class Table(object):
         :return: A generator yielding each line of the rendered table
         :rtype: generator
         """
+
+        column_stats = self.calculate_column_stats(rowstore)
+
+        # the total width of all single-space separators between columns
         heading_separators_width = 0 if not self.columns else len(self.columns) - 1
 
         column_widths = []
         for column in self.columns:
 
             # the width of the column heading, or 0 if we aren't displaying headings
-            heading_width = 0 if not self.display_headings else len(column.name)
+            column_width = 0 if not self.display_headings else len(column.name)
+
+            stats = column_stats.get(column.field, ColumnStats(0, 0, 0))
 
             # the minimum number of chars to display at least one word of each cell
-            column_stats = rowstore.column_stats.get(column.field, ColumnStats(0, 0, 0))
-            column_width = column_stats.smallest_cell_word
+            if stats.smallest_cell_word > column_width:
+                column_width = stats.smallest_cell_word
+
+            # if a minimum width is explicitly specified for the column, then use it
             if column.minimum_width is not None and column.minimum_width > column_width:
                 column_width = column.minimum_width
 
@@ -132,9 +166,11 @@ class Table(object):
             expand_columns = [i for i in range(len(self.columns)) if self.columns[i].expand]
             if expand_columns:
                 total_extra_space = output_width - minimum_width
-                extra_space_per_column = total_extra_space / len(expand_columns)
-                for i in expand_columns:
-                    column_widths[i] += extra_space_per_column
+                for i in itertools.cycle(expand_columns):
+                    if total_extra_space == 0:
+                        break
+                    column_widths[i] += 1
+                    total_extra_space -= 1
 
         # if headings are displayed, then render the heading and a separator
         if self.display_headings:
@@ -144,7 +180,9 @@ class Table(object):
             yield from self.render_row(row, column_widths)
 
         # render each row in the rowstore
+        columns = {column.field:column for column in self.columns}
         for row in rowstore:
+            row = {field:columns[field].render_value(value) for field, value in row.items() if field in columns}
             yield from self.render_row(row, column_widths)
 
     def render_row(self, row, column_widths):
