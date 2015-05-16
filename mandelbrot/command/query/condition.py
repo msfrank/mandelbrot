@@ -47,6 +47,7 @@ def run_command(ns):
                 page = event_loop.run_until_complete(coro)
                 for check_condition in page.list_check_conditions():
                     rowstore.append_row(check_condition.destructure())
+                    nleft -= 1
                 last = page.get_last()
                 if page.get_exhausted():
                     break

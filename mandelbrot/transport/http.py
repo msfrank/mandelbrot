@@ -117,7 +117,7 @@ class HttpTransport(Transport):
     def get_collection(self, path, matchers, count, last):
         params = matchers.copy()
         if count is not None:
-            params['count'] = count
+            params['limit'] = count
         if last is not None:
             params['last'] = last
         request = requests.Request(
