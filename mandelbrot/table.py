@@ -90,20 +90,20 @@ class Table(object):
         """
         self.columns.append(column)
 
-    def print_table(self, rowstore, terminal):
+    def print_table(self, rowstore, output):
         """
         """
         # the current width of the terminal
-        terminal_width = terminal.get_width()
-        for line in self.render_table(rowstore, terminal_width):
-            terminal.write_line(line)
+        output_width = output.get_width()
+        for line in self.render_table(rowstore, output_width):
+            output.write_line(line)
 
-    def render_table(self, rowstore, terminal_width):
+    def render_table(self, rowstore, output_width):
         """
         :param rowstore:
         :type rowstore: Rowstore
-        :param terminal_width:
-        :type terminal_width: int
+        :param output_width:
+        :type output_width: int
         :return: A generator yielding each line of the rendered table
         :rtype: generator
         """
@@ -128,10 +128,10 @@ class Table(object):
 
         # if we have more than the minimum space, then divide up the extra amount
         # evenly between all columns which have expand set to True
-        if minimum_width < terminal_width:
+        if minimum_width < output_width:
             expand_columns = [i for i in range(len(self.columns)) if self.columns[i].expand]
             if expand_columns:
-                total_extra_space = terminal_width - minimum_width
+                total_extra_space = output_width - minimum_width
                 extra_space_per_column = total_extra_space / len(expand_columns)
                 for i in expand_columns:
                     column_widths[i] += extra_space_per_column
