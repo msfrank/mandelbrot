@@ -15,6 +15,8 @@ class Column(object):
         self.normalize = normalize
 
     def render_value(self, value):
+        if value is None:
+            return None
         if self.normalize:
             return ' '.join(str(value).split())
         return str(value)

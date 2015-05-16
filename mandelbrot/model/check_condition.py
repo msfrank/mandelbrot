@@ -1,6 +1,7 @@
 import datetime
 
 from mandelbrot.model import StructuredMixin, add_constructor, construct
+from mandelbrot.model.timestamp import Timestamp
 from mandelbrot.model.constants import lifecycle_types, health_types
 
 class CheckCondition(StructuredMixin):
@@ -19,7 +20,7 @@ class CheckCondition(StructuredMixin):
         return self.timestamp
 
     def set_timestamp(self, timestamp):
-        assert isinstance(timestamp, datetime.datetime)
+        assert isinstance(timestamp, Timestamp)
         self.timestamp = timestamp
 
     def get_lifecycle(self):
@@ -66,7 +67,7 @@ class CheckCondition(StructuredMixin):
 
     def destructure(self):
         structure = {}
-        structure['timestamp'] = self.timestamp.isoformat()
+        structure['timestamp'] = self.timestamp.destructure()
         structure['lifecycle'] = self.lifecycle
         structure['health'] = self.health
         structure['squelched'] = self.squelched
@@ -109,7 +110,7 @@ class CheckConditionPage(StructuredMixin):
 
 def _construct_check_condition(structure):
     check_condition = CheckCondition()
-    timestamp = datetime.datetime(1970, 1, 1) + datetime.timedelta(milliseconds=int(structure['timestamp']))
+    timestamp = construct(Timestamp, structure['timestamp'])
     check_condition.set_timestamp(timestamp)
     check_condition.set_lifecycle(structure['lifecycle'])
     check_condition.set_health(structure['health'])

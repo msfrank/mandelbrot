@@ -1,7 +1,6 @@
 import asyncio
 import urllib.parse
 import cifparser
-import pprint
 import logging
 
 from mandelbrot.registry import Registry
@@ -46,7 +45,7 @@ def run_command(ns):
                     start=timerange[0], end=timerange[1], last=last, descending=reverse)
                 page = event_loop.run_until_complete(coro)
                 for check_condition in page.list_check_conditions():
-                    rowstore.append_row(check_condition.destructure())
+                    rowstore.append_row(check_condition_to_row(check_condition))
                     nleft -= 1
                 last = page.get_last()
                 if page.get_exhausted():
@@ -54,7 +53,7 @@ def run_command(ns):
         else:
             coro = endpoint.get_current_condition(agent_id, check_id)
             check_condition = event_loop.run_until_complete(coro)
-            rowstore.append_row(check_condition.destructure())
+            rowstore.append_row(check_condition_to_row(check_condition))
 
         # render the rowstore in a table
         table = Table()
@@ -68,3 +67,18 @@ def run_command(ns):
         table.print_table(rowstore, terminal)
 
     return 0
+
+def check_condition_to_row(check_condition):
+    """
+    :param check_condition:
+    :type check_condition: CheckCondition
+    :return:
+    """
+    return {
+        'timestamp': check_condition.get_timestamp().get_datetime().isoformat(),
+        'lifecycle': check_condition.get_lifecycle(),
+        'health': check_condition.get_health(),
+        'summary': check_condition.get_summary(),
+        'acknowledged': check_condition.get_acknowledged(),
+        'squelched': 'on' if check_condition.get_squelched() else '',
+    }

@@ -74,12 +74,9 @@ def notification_to_row(notification):
     :type notification: Notification
     :return:
     """
-    row = {
+    return {
         'timestamp': notification.get_timestamp().get_datetime().isoformat(),
         'kind': notification.get_kind(),
         'description': notification.get_description(),
+        'correlation': notification.get_correlation(),
     }
-    correlation = notification.get_correlation()
-    if correlation:
-        row['correlation'] = correlation
-    return row
