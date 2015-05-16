@@ -153,6 +153,11 @@ class Table(object):
             if stats.smallest_cell_word > column_width:
                 column_width = stats.smallest_cell_word
 
+            # if column normalization is off, then give the column enough space
+            # to display the largest cell
+            if not column.normalize and stats.largest_cell > column_width:
+                column_width = stats.largest_cell
+
             # if a minimum width is explicitly specified for the column, then use it
             if column.minimum_width is not None and column.minimum_width > column_width:
                 column_width = column.minimum_width
