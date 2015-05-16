@@ -18,7 +18,7 @@
 import datetime
 import pyparsing as pp
 
-from mandelbrot.model.timestamp import UTC
+from mandelbrot.model.timestamp import Timestamp, UTC
 
 EpochDateTime = pp.Word(pp.srange('[1-9]'), pp.srange('[0-9]'))
 def parseEpochDateTime(tokens):
@@ -92,11 +92,29 @@ NowPlusDelta.setParseAction(parseNowPlusDelta)
 
 DateTimeWindow = ClosedDateTimeRange | DateTimePlusDelta | NowPlusDelta
 
+def datetime_to_timestamp(dt):
+    timestamp = Timestamp()
+    timestamp.set_datetime(dt)
+    return timestamp
+
 def parse_datetime(string):
     """
     Parse a datetime string.  Datetimes may be specified using the following formats:
+
+    ISOFORMAT       ISO-8601 format, e.g. "2015-05-01T12:45:00Z"
+    RELATIVE        some magnitude relative to now, e.g. "2 hours ago" or "15 days ahead"
+    EPOCH           seconds since the UNIX epoch
+
+    :param string: The timerange to parse
+    :type string: str
+    :returns: the datetime as a Timestamp
+    :rtype: Timestamp
+    :raises ValueError: the timerange could not be parsed
     """
-    return DateTime.parseString(string, parseAll=True).asList()[0]
+    try:
+        return datetime_to_timestamp(DateTime.parseString(string, parseAll=True).asList()[0])
+    except Exception as e:
+        raise ValueError("failed to parse datetime '%s'" % string)
 
 def parse_timerange(string):
     """
@@ -106,15 +124,19 @@ def parse_timerange(string):
     START..         from START to infinity
     ..END           from -infinity to END
    
-    Returns a 2-tuple containing the start and end datetimes in UTC timezone,
-    otherwise throws Exception.
+    :param string: The timerange to parse
+    :type string: str
+    :returns: A 2-tuple containing the start and end timestamps
+    :rtype: tuple[Timestamp,Timestamp]
+    :raises ValueError: the timerange could not be parsed
     """
-    start,end = DateTimeRange.parseString(string, parseAll=True).asList()
-    if start == "..":
-        start = None
-    if end == "..":
-        end = None
-    return (start,end)
+    try:
+        start,end = DateTimeRange.parseString(string, parseAll=True).asList()
+        start = None if start == ".." else datetime_to_timestamp(start)
+        end = None if end == ".." else datetime_to_timestamp(end)
+        return (start,end)
+    except Exception as e:
+        raise ValueError("failed to parse timerange '%s'" % string)
 
 def parse_timewindow(string):
     """
@@ -125,7 +147,14 @@ def parse_timewindow(string):
     START+DELTA
     +DELTA
 
-    Returns a 2-tuple containing the start and end datetimes in UTC timezone,
-    otherwise throws Exception.
+    :param string: The timewindow to parse
+    :type string: str
+    :returns: A 2-tuple containing the start and end timestamps
+    :rtype: tuple[Timestamp,Timestamp]
+    :raises ValueError: the timewindow could not be parsed
     """
-    return DateTimeWindow.parseString(string, parseAll=True).asList()
+    try:
+        start,end = DateTimeWindow.parseString(string, parseAll=True).asList()
+        return (datetime_to_timestamp(start), datetime_to_timestamp(end))
+    except Exception as e:
+        raise ValueError("failed to parse timewindow '%s'" % string)

@@ -9,6 +9,7 @@ from mandelbrot.model import construct
 from mandelbrot.model.registration import Registration
 from mandelbrot.model.check_condition import CheckCondition, CheckConditionPage
 from mandelbrot.model.agent_metadata import AgentMetadataPage
+from mandelbrot.model.timestamp import Timestamp
 from mandelbrot.transport import Transport, entry_point_type
 
 class Endpoint(object):
@@ -57,8 +58,9 @@ class Endpoint(object):
         return check_condition_page.check_conditions[0]
 
     @asyncio.coroutine
-    def list_conditions(self, agent_id, check_id, limit=100, start=None, end=None,
-                        start_inclusive=False, end_exclusive=False, descending=False):
+    def list_conditions(self, agent_id, check_id, limit, start=None, end=None,
+                        last=None, start_inclusive=False, end_exclusive=False,
+                        descending=False):
         """
         :param agent_id:
         :type agent_id: cifparser.Path
@@ -68,7 +70,23 @@ class Endpoint(object):
         :rtype: CheckConditionPage
         """
         path = 'v2/agents/' + str(agent_id) + '/checks/' + str(check_id) + '/condition'
-        page = yield from self.transport.get_collection(path, {}, count=limit, last=None)
+        matchers = {}
+        if start:
+            assert isinstance(start, Timestamp)
+            matchers['from'] = start
+        if end:
+            assert isinstance(end, Timestamp)
+            matchers['to'] = end
+        if start_inclusive:
+            assert isinstance(start_inclusive, bool)
+            matchers['fromInclusive'] = start_inclusive
+        if end_exclusive:
+            assert isinstance(end_exclusive, bool)
+            matchers['toExclusive'] = end_exclusive
+        if descending:
+            assert isinstance(descending, bool)
+            matchers['descending'] = descending
+        page = yield from self.transport.get_collection(path, matchers, count=limit, last=last)
         return construct(CheckConditionPage, page)
 
 @contextlib.contextmanager
