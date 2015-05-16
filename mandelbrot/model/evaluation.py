@@ -1,7 +1,8 @@
 import datetime
 
-from mandelbrot.model import StructuredMixin
+from mandelbrot.model import StructuredMixin, add_constructor, construct
 from mandelbrot.model.constants import CheckHealth, health_types
+from mandelbrot.model.timestamp import Timestamp
 
 HEALTHY = CheckHealth.HEALTHY
 DEGRADED = CheckHealth.DEGRADED
@@ -35,7 +36,7 @@ class Evaluation(StructuredMixin):
         return self.timestamp
 
     def set_timestamp(self, timestamp):
-        assert isinstance(timestamp, datetime.datetime)
+        assert isinstance(timestamp, Timestamp)
         self.timestamp = timestamp
 
     def get_metric(self, metric_name):
@@ -58,7 +59,7 @@ class Evaluation(StructuredMixin):
     def destructure(self):
         structure = {}
         if self.timestamp is not None:
-            structure['timestamp'] = self.timestamp.strftime("%Y-%m-%dT%H:%M:%S%Z")
+            structure['timestamp'] = self.timestamp.destructure()
         if self.summary is not None:
             structure['summary'] = self.summary
         if self.health is not None:
@@ -66,3 +67,10 @@ class Evaluation(StructuredMixin):
         if len(self.metrics) > 0:
             structure['metrics'] = self.metrics
         return structure
+        
+def _construct_evaluation(structure):
+    raise NotImplementedError()
+
+add_constructor(Evaluation, _construct_evaluation)
+
+

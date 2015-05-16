@@ -7,6 +7,7 @@ import logging
 log = logging.getLogger("mandelbrot.agent.evaluator")
 
 from mandelbrot.model.evaluation import Evaluation
+from mandelbrot.model.timestamp import now
 from mandelbrot.agent.scheduled_check import ScheduledCheck, make_scheduled_check
 from mandelbrot.agent.scheduler import Scheduler
 
@@ -175,8 +176,6 @@ class EvaluationContext(object):
         self.context = context
         self.evaluation = None
 
-    UTC = datetime.timezone(datetime.timedelta(0), 'Z')
-
     def execute(self):
         """
         Execute the check and return the entire context.  If the check
@@ -187,7 +186,7 @@ class EvaluationContext(object):
         """
         try:
             self.evaluation = Evaluation()
-            self.evaluation.set_timestamp(datetime.datetime.now(EvaluationContext.UTC))
+            self.evaluation.set_timestamp(now())
             self._check.execute(self.evaluation, self.context)
             return self
         except Exception as e:

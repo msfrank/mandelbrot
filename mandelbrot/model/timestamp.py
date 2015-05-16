@@ -29,3 +29,13 @@ def _construct_timestamp(structure):
     return timestamp
 
 add_constructor(Timestamp, _construct_timestamp)
+
+def now():
+    timestamp = Timestamp()
+    timestamp.set_datetime(datetime.datetime.now(UTC))
+    return timestamp
+
+def timestamp(*args, **kwargs):
+    timestamp = Timestamp()
+    timestamp.set_datetime(datetime.datetime(*args, **kwargs).astimezone(UTC))
+    return timestamp
