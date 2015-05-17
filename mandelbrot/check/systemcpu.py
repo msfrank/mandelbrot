@@ -54,6 +54,8 @@ class SystemCPU(Check):
         else:
             showvals = ", ".join(["%.1f%% %s" % (v,n) for n,v in items])
         evaluation.set_summary("CPU utilization is " + showvals)
+        for name,value in pct.items():
+            evaluation.set_metric(name, value)
         if self.userfailed is not None and pct['user'] / 100.0 > self.userfailed:
             evaluation.set_health(FAILED)
         elif self.systemfailed is not None and pct['system'] / 100.0 > self.systemfailed:

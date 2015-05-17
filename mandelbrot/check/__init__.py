@@ -14,19 +14,35 @@ class Check(object):
         self.ns = ns
 
     def get_join_timeout(self):
+        """
+        The join timeout defines how long a check can remain in JOINING
+        state before its health is considered UNKNOWN.
+        """
         return self.ns.get_timedelta(cifparser.ROOT_PATH, "join timeout")
 
     def get_check_timeout(self):
+        """
+        """
         return self.ns.get_timedelta(cifparser.ROOT_PATH, "check timeout")
 
     def get_alert_timeout(self):
+        """
+        """
         return self.ns.get_timedelta(cifparser.ROOT_PATH, "alert timeout")
 
     def get_retirement_age(self):
+        """
+        """
         return self.ns.get_timedelta(cifparser.ROOT_PATH, "retirement age")
 
     def get_allowed_notifications(self):
         return self.ns.get_str_list_or_default(cifparser.ROOT_PATH, "allowed notifications")
+
+    def get_metrics(self):
+        """
+        Return the set of metrics to register.
+        """
+        return {}
 
     def init(self):
         """

@@ -39,6 +39,9 @@ class SystemLoad(Check):
             load1 = load1 / float(ncores)
             load5 = load5 / float(ncores)
             load15 = load15 / float(ncores)
+        evaluation.set_metric('load1', load1)
+        evaluation.set_metric('load5', load5)
+        evaluation.set_metric('load15', load15)
         if self.failed_1min is not None and load1 > self.failed_1min:
             evaluation.set_health(FAILED)
         elif self.failed_5min is not None and load5 > self.failed_5min:

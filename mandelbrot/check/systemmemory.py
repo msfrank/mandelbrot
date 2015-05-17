@@ -38,6 +38,12 @@ class SystemMemory(Check):
         swaptotal = swap.total
         evaluation.set_summary("%.1f%% used of %s of physical memory; %.1f%% used of %s of swap" % (
             memused, str(memtotal), swapused, str(swaptotal)))
+        evaluation.set_metric('memavail', memavail)
+        evaluation.set_metric('memused', memused)
+        evaluation.set_metric('memtotal', memtotal)
+        evaluation.set_metric('swapavail', swapavail)
+        evaluation.set_metric('swapused', swapused)
+        evaluation.set_metric('swaptotal', swaptotal)
         if self.memoryfailed is not None and memory.used > self.memoryfailed:
             evaluation.set_health(FAILED)
         elif self.swapfailed is not None and swap.used > self.swapfailed:
