@@ -112,8 +112,10 @@ class Evaluator(object):
                 # a scheduled check returns an error
                 elif isinstance(result, EvaluationException):
                     log.error("check %s failed: %s", result.check_id, str(result.cause))
+                    checks_running.remove(result.check_id)
+                # any exception not wrapped in EvaluationException stops the evaluator
                 elif isinstance(result, Exception):
-                    log.error("check %s raises %s", result.check_id, str(result))
+                    raise result
 
         # unscheduled all scheduled checks
         scheduler.unschedule_all()
