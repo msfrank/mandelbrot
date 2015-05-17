@@ -1,3 +1,5 @@
+import decimal
+
 from mandelbrot.model import StructuredMixin, add_constructor, construct
 from mandelbrot.model.timestamp import Timestamp
 
@@ -75,8 +77,8 @@ def _construct_check_metrics(structure):
     check_metrics = CheckMetrics()
     timestamp = construct(Timestamp, structure['timestamp'])
     check_metrics.set_timestamp(timestamp)
-    for name,value in structure['metrics']:
-        check_metrics.set_metric(name, value)
+    for name,value in structure['metrics'].items():
+        check_metrics.set_metric(name, float(value))
     return check_metrics
 
 add_constructor(CheckMetrics, _construct_check_metrics)

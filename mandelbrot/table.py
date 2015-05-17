@@ -33,13 +33,23 @@ class Rowstore(object):
     """
     def __init__(self):
         self.rows = []
+        self.columns = set()
 
     def append_row(self, row):
         """
         :param row:
         :type row: dict[str,str]
         """
+        for field in row.keys():
+            self.columns.add(field)
         self.rows.append(row)
+
+    def get_columns(self):
+        """
+        :returns: A tuple enumerating all the columns present in the rowstore
+        :rtype: tuple[str]
+        """
+        return tuple(self.columns)
 
     def sort_rows(self, columns, reverse):
         """
