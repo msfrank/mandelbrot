@@ -1,5 +1,6 @@
 import sys
 import itertools
+import functools
 import shutil
 
 class Column(object):
@@ -40,8 +41,41 @@ class Rowstore(object):
         """
         self.rows.append(row)
 
+    def sort_rows(self, columns, reverse):
+        """
+        :param columns:
+        :type columns: list[str]
+        :param reverse:
+        :type reverse: bool
+        """
+        def extract_key(row):
+            return [row[field] for field in columns if field in row]
+        self.rows.sort(key=extract_key, reverse=reverse)
+
     def __iter__(self):
         return iter(self.rows)
+
+@functools.total_ordering
+class Maybe(object):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return str(self.value)
+    def __lt__(self, other):
+        if self.value is None and other is None:
+            return True
+        if self.value is None and other is not None:
+            return True
+        if self.value is not None and other is None:
+            return False
+        return self.value < other
+    def __eq__(self, other):
+        return self.value == other
+
+def maybe(value_or_none):
+    if value_or_none is None:
+        return None
+    return Maybe(value_or_none)
 
 class Output(object):
     def get_width(self):

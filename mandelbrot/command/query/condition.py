@@ -6,7 +6,7 @@ import logging
 from mandelbrot.registry import Registry
 from mandelbrot.query.endpoint import make_endpoint
 from mandelbrot.timerange import parse_timerange
-from mandelbrot.table import Table, Column, Rowstore, Terminal
+from mandelbrot.table import Table, Column, Rowstore, Terminal, maybe
 from mandelbrot.log import utility_format
 
 def run_command(ns):
@@ -28,6 +28,10 @@ def run_command(ns):
     else:
         timerange = None
     limit = ns.limit
+    if ns.sort_columns:
+        sort_columns = [column.lower().strip() for column in ns.sort_columns.split(',')]
+    else:
+        sort_columns = None
     reverse = ns.reverse
     endpoint_url = urllib.parse.urlparse(ns.endpoint_url)
 
@@ -55,6 +59,10 @@ def run_command(ns):
             check_condition = event_loop.run_until_complete(coro)
             rowstore.append_row(check_condition_to_row(check_condition))
 
+        # sort the rowstore if sort columns are specified
+        if sort_columns:
+            rowstore.sort_rows(sort_columns, False)
+
         # render the rowstore in a table
         table = Table()
         terminal = Terminal()
@@ -78,7 +86,7 @@ def check_condition_to_row(check_condition):
         'timestamp': check_condition.get_timestamp().get_datetime().isoformat(),
         'lifecycle': check_condition.get_lifecycle(),
         'health': check_condition.get_health(),
-        'summary': check_condition.get_summary(),
-        'acknowledged': check_condition.get_acknowledged(),
+        'summary': maybe(check_condition.get_summary()),
+        'acknowledged': maybe(check_condition.get_acknowledged()),
         'squelched': 'on' if check_condition.get_squelched() else '',
     }

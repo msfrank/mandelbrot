@@ -21,9 +21,11 @@ def main():
         query_condition.add_argument('-i', '--agent-id', metavar='AGENT', dest='agent_id',
                                      help='Query the specified AGENT')
         query_condition.add_argument('-t', '--timerange', metavar='TIMERANGE', dest='timerange', default=None,
-                                     help='Request data within the specified TIMERANGE')
+                                     help='Request results within the specified TIMERANGE')
         query_condition.add_argument('-l', '--limit', metavar='LIMIT', dest='limit', type=int, default=100,
                                      help='Return at most LIMIT results')
+        query_condition.add_argument('-s', '--sort-by', metavar='COLUMNS', dest='sort_columns', default=None,
+                                     help='Sort results using the specified COLUMNS')
         query_condition.add_argument('-r', '--reverse', dest='reverse', action='store_true',
                                      help='Return results in descending order')
         query_condition.add_argument('-u', '--endpoint-url', metavar='URL', dest='endpoint_url',
@@ -42,7 +44,7 @@ def main():
         query_notifications.add_argument('-i', '--agent-id', metavar='AGENT', dest='agent_id',
                                      help='Query the specified AGENT')
         query_notifications.add_argument('-t', '--timerange', metavar='TIMERANGE', dest='timerange', default=None,
-                                     help='Request data within the specified TIMERANGE')
+                                     help='Request results within the specified TIMERANGE')
         query_notifications.add_argument('-l', '--limit', metavar='LIMIT', dest='limit', type=int, default=100,
                                      help='Return at most LIMIT results')
         query_notifications.add_argument('-r', '--reverse', dest='reverse', action='store_true',
@@ -63,7 +65,7 @@ def main():
         query_metrics.add_argument('-i', '--agent-id', metavar='AGENT', dest='agent_id',
                                          help='Query the specified AGENT')
         query_metrics.add_argument('-t', '--timerange', metavar='TIMERANGE', dest='timerange', default=None,
-                                         help='Request data within the specified TIMERANGE')
+                                         help='Request results within the specified TIMERANGE')
         query_metrics.add_argument('-l', '--limit', metavar='LIMIT', dest='limit', type=int, default=100,
                                          help='Return at most LIMIT results')
         query_metrics.add_argument('-r', '--reverse', dest='reverse', action='store_true',
