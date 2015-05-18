@@ -33,13 +33,19 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment "" No Input/Output (Daemon)",
+        "Environment :: Console",
         "Intended Audience :: Developers",
         "Intended Audience :: Information Technology",
         "Intended Audience :: System Administrators",
-        "License :: Other/Proprietary License",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Natural Language :: English",
         "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Unix",
         "Programming Language :: Python :: 3.4",
+        "Topic :: System :: Monitoring",
+        "Topic :: System :: Networking :: Monitoring",
+
         ],
     # package contents
     packages=[
