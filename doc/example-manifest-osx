@@ -1,12 +1,11 @@
 metadata:
   pretty name = localhost
   description = this is a description
-    | more description goes here, lorem ipsum est blah blah
-    | and it even continues further until a line is encountered
-    | that doesn't start with a pipe '|' symbol.
+    | more description goes here and it even continues further until a
+    | line is encountered that doesn't start with a pipe '|' symbol.
 policy:
   joining timeout = 10 minutes
-  probe timeout = 10 minutes
+  check timeout = 10 minutes
   alert timeout = 10 minutes
 checks:
   system.load:
