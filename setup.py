@@ -53,6 +53,8 @@ setup(
         'mandelbrot.agent',
         'mandelbrot.check',
         'mandelbrot.command',
+        'mandelbrot.command.agent',
+        'mandelbrot.command.query',
         'mandelbrot.model',
         'mandelbrot.query',
         'mandelbrot.transport',
