@@ -29,6 +29,7 @@ default_join_timeout = datetime.timedelta(minutes=5)
 default_check_timeout = datetime.timedelta(minutes=1)
 default_alert_timeout = datetime.timedelta(minutes=2)
 default_retirement_age = datetime.timedelta(days=1)
+default_retention_period = datetime.timedelta(days=30)
 
 def make_registration(agent_id, metadata, scheduled_checks):
     """
@@ -45,6 +46,9 @@ def make_registration(agent_id, metadata, scheduled_checks):
 
     # set agent id
     registration.set_agent_id(agent_id)
+
+    # set policy
+    registration.set_retention_period(default_retention_period)
 
     # set metadata
     for meta_name,meta_value in metadata:

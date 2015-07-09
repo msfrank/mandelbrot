@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Mandelbrot.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import cifparser
 
 from mandelbrot.model import StructuredMixin
@@ -27,9 +28,11 @@ class Registration(StructuredMixin):
     def __init__(self):
         self.agent_id = None
         self.agent_type = None
+        self.policy = {}
         self.checks = {}
         self.metrics = {}
         self.metadata = {}
+        self.groups = set()
 
     def get_agent_id(self):
         return self.agent_id
@@ -44,6 +47,13 @@ class Registration(StructuredMixin):
     def set_agent_type(self, agent_type):
         assert isinstance(agent_type, str)
         self.agent_type = agent_type
+
+    def get_retention_period(self):
+        return self.policy['retentionPeriod']
+
+    def set_retention_period(self, retention_period):
+        assert isinstance(retention_period, datetime.timedelta)
+        self.policy['retentionPeriod'] = int(retention_period / datetime.timedelta(milliseconds=1))
 
     def get_check(self, check_id):
         return self.checks[check_id]
@@ -97,10 +107,27 @@ class Registration(StructuredMixin):
     def flush_metadata(self):
         self.metadata = {}
 
+    def contains_group(self, group_name):
+        return self.groups.add(group_name)
+
+    def list_groups(self):
+        return list(self.groups)
+
+    def add_group(self, group_name):
+        assert isinstance(group_name, str)
+        return group_name in self.groups
+
+    def delete_group(self, group_name):
+        self.groups.remove(group_name)
+
+    def flush_groups(self):
+        self.groups.clear()
+
     def destructure(self):
         structure = {}
         structure['agentId'] = str(self.agent_id)
         structure['agentType'] = self.agent_type
+        structure['policy'] = self.policy
         structure['metadata'] = self.metadata
         checks = {}
         for check_id,check in self.checks.items():
@@ -112,4 +139,5 @@ class Registration(StructuredMixin):
             metric_source = str(check_id) + ':' + metric_name
             metrics[metric_source] = metric.destructure()
         structure['metrics'] = metrics
+        structure['groups'] = list(self.groups)
         return structure

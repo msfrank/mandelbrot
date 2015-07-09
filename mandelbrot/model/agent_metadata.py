@@ -28,7 +28,8 @@ class AgentMetadata(StructuredMixin):
         self.agent_id = None
         self.joined_on = None
         self.last_update = None
-        self.lsn = None
+        self.generation = None
+        self.expires = None
 
     def get_agent_id(self):
         return self.agent_id
@@ -51,19 +52,28 @@ class AgentMetadata(StructuredMixin):
         assert isinstance(last_update, Timestamp)
         self.last_update = last_update
 
-    def get_lsn(self):
-        return self.lsn
+    def get_generation(self):
+        return self.generation
 
-    def set_lsn(self, lsn):
-        assert isinstance(lsn, int)
-        self.lsn = lsn
+    def set_generation(self, generation):
+        assert isinstance(generation, int)
+        self.generation = generation
+
+    def get_expires(self):
+        return self.expires
+
+    def set_expires(self, expires):
+        assert isinstance(expires, Timestamp)
+        self.expires = expires
 
     def destructure(self):
         structure = {}
         structure['agentId'] = str(self.agent_id)
         structure['joinedOn'] = self.joined_on.destructure()
         structure['lastUpdate'] = self.last_update.destructure()
-        structure['lsn'] = self.lsn
+        structure['generation'] = self.generation
+        if self.expires is not None:
+            structure['expires'] = self.expires.destructure()
         return structure
 
 class AgentMetadataPage(StructuredMixin):
@@ -109,7 +119,10 @@ def _construct_agent_metadata(structure):
     agent_metadata.set_joined_on(joined_on)
     last_update = construct(Timestamp, structure['lastUpdate'])
     agent_metadata.set_last_update(last_update)
-    agent_metadata.set_lsn(structure['lsn'])
+    agent_metadata.set_generation(structure['generation'])
+    if 'expires' in structure:
+        expires = construct(Timestamp, structure['expires'])
+        agent_metadata.set_expires(expires)
     return agent_metadata
 
 add_constructor(AgentMetadata, _construct_agent_metadata)
