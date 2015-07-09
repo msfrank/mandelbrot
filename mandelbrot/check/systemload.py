@@ -27,7 +27,7 @@ class SystemLoad(Check):
     Check system load.
     """
     def get_behavior_type(self):
-        return "io.mandelbrot.core.system.ScalarCheck"
+        return "io.mandelbrot.core.check.ScalarCheck"
 
     def get_behavior(self):
         return {}
